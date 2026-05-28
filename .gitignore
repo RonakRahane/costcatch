@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+coverage/
+*.tsbuildinfo
+web/.next/
+web/out/
+
+# Python bytecode, regenerated whenever the interceptor runs
+__pycache__/
+*.pyc
+
+# Trace output written by costcatch itself
+.costcatch/
+.agent-traces/
+
+# Secrets. Never commit a real key; ship .env.example instead.
+.env
+.env.*
+!.env.example
+
+# OS and editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+
+# Archived suites, kept locally and out of the repo: the end-to-end suite and the
+# eval cases outside the 30 that catch every planted bug (evals/README.md)
+archive/
+# Written by the archived end-to-end suite
+TEST-REPORT.md
+# Rewritten on every eval run
+evals/RESULTS.md
+# Internal code statistics
+lines-of-code.md
+
+# Evals: their scratch directory (captures, the price home)
+evals/work/
