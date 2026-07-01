@@ -1,4 +1,4 @@
-"""Imported at startup through PYTHONPATH. Patches httpx and httpx2 and appends each LLM
+"""Imported at startup through PYTHONPATH. Patches httpx, httpx2 and urllib3 and appends each LLM
 call as a JSON line to the file in COSTCATCH_OUTPUT, without changing what the program sees."""
 
 import os
@@ -831,6 +831,193 @@ if TRACE_OUTPUT and not _ALREADY_INSTALLED:
         except Exception:
             return b""
 
+    def _tee_urllib3_response(response, call_id, url, method, request_body, start_ms):
+        """Capture the body as the program reads it, so stream=True callers are not stalled."""
+        headers = getattr(response, "headers", {}) or {}
+        capture = _StreamCapture(call_id, url, method, request_body, start_ms, response.status, headers)
+
+        # urllib3 has already read and decoded a preloaded body.
+        body = getattr(response, "_body", None)
+        if body is not None:
+            data = body if isinstance(body, (bytes, bytearray)) else bytes(body)
+            capture.feed(data)
+            capture.done = True
+            capture.flush()
+            return
+
+        _register_pending(capture)
+
+        def finish():
+            # Decode before truncating, because cut compressed bytes no longer decompress. Clearing
+            # the headers stops flush() from decoding again.
+            try:
+                raw = b"".join(capture.chunks)
+                decoded = _decode_for_capture(raw, headers)
+                capture.chunks = [decoded[:MAX_BODY_BYTES]]
+                capture.headers = {}
+                if len(decoded) > MAX_BODY_BYTES:
+                    capture.truncated = True
+            except Exception:
+                pass
+            capture.flush()
+
+        def drained():
+            # urllib3 stops reading a Content-Length body once it has all of it, with no final empty
+            # read, so treat it as done once it is closed and empty.
+            try:
+                if not getattr(response, "closed", False):
+                    return False
+                buffered = getattr(response, "_decoded_buffer", None)
+                if buffered is not None and len(buffered) > 0:
+                    return False
+                # urllib3 2.6+ limits how much one read decompresses, and the rest waits in the decoder.
+                decoder = getattr(response, "_decoder", None)
+                if decoder is not None and getattr(decoder, "has_unconsumed_tail", False):
+                    return False
+                return True
+            except Exception:
+                return False
+
+        original_read = response.read
+        original_read_chunked = getattr(response, "read_chunked", None)
+        original_close = response.close
+        # urllib3 closes the response inside a read that is about to fail, so that close waits for
+        # the read's result. A close from another thread records at once.
+        state = {"reading": 0, "reader": None, "close_pending": False}
+
+        def patched_read(*args, **kwargs):
+            state["reading"] += 1
+            state["reader"] = threading.get_ident()
+            try:
+                data = original_read(*args, **kwargs)
+            except Exception as exc:
+                if not capture.flushed:
+                    capture.fail(exc)
+                finish()
+                raise
+            finally:
+                state["reading"] -= 1
+            try:
+                if data:
+                    capture.feed(data)
+                if not data or not kwargs.get("amt", args[0] if args else None) or drained():
+                    capture.done = True
+                if capture.done or state["close_pending"]:
+                    finish()
+            except Exception:
+                pass
+            return data
+
+        def _flagged(iterable):
+            iterator = iter(iterable)
+            while True:
+                state["reading"] += 1
+                state["reader"] = threading.get_ident()
+                try:
+                    chunk = next(iterator)
+                except StopIteration:
+                    return
+                finally:
+                    state["reading"] -= 1
+                yield chunk
+
+        def patched_read_chunked(*args, **kwargs):
+            try:
+                for chunk in _flagged(original_read_chunked(*args, **kwargs)):
+                    try:
+                        capture.feed(chunk)
+                    except Exception:
+                        pass
+                    yield chunk
+                capture.done = True
+            except GeneratorExit:
+                raise
+            except Exception as exc:
+                if not capture.flushed:
+                    capture.fail(exc)
+                raise
+            finally:
+                finish()
+
+        def patched_close(*args, **kwargs):
+            try:
+                if state["reading"] and state["reader"] == threading.get_ident():
+                    state["close_pending"] = True
+                else:
+                    finish()
+            except Exception:
+                pass
+            return original_close(*args, **kwargs)
+
+        try:
+            # Wrap the low-level readers and not stream(), which calls them and would capture the
+            # body twice. Chunked responses skip read(), so read_chunked is wrapped too.
+            response.read = patched_read
+            if callable(original_read_chunked):
+                response.read_chunked = patched_read_chunked
+            response.close = patched_close
+        except Exception:
+            capture.flush()
+
+    def _patch_urllib3(urllib3_module):
+        with _patch_lock:
+            return _patch_urllib3_locked(urllib3_module)
+
+    def _patch_urllib3_locked(urllib3_module):
+        """Patching urlopen also covers requests, which is built on urllib3."""
+        if "urllib3" in _patched_modules:
+            return
+        if not hasattr(urllib3_module, "HTTPConnectionPool"):
+            return
+        if not hasattr(urllib3_module.HTTPConnectionPool, "urlopen"):
+            return
+
+        try:
+            original_urlopen = urllib3_module.HTTPConnectionPool.urlopen
+
+            # Retries and redirects call urlopen again with positional args, so pass them through
+            # unchanged and record only the outermost call.
+            _in_urlopen = threading.local()
+
+            def patched_urlopen(self, method, url, *args, **kwargs):
+                if getattr(_in_urlopen, "active", False):
+                    return original_urlopen(self, method, url, *args, **kwargs)
+
+                try:
+                    full_url = "%s://%s:%s%s" % (self.scheme, self.host, self.port, url)
+                except Exception:
+                    return original_urlopen(self, method, url, *args, **kwargs)
+
+                if not _is_model_request(full_url, method):
+                    return original_urlopen(self, method, url, *args, **kwargs)
+
+                body = args[0] if args else kwargs.get("body")
+                start_ms = int(time.time() * 1000)
+                request_body = _safe_json_parse(body) if isinstance(body, (str, bytes, bytearray)) else None
+                call_id = _next_id()
+                _write_start(call_id, full_url, request_body, start_ms)
+
+                _in_urlopen.active = True
+                try:
+                    response = original_urlopen(self, method, url, *args, **kwargs)
+                except Exception as exc:
+                    _write_transport_error(call_id, full_url, method, request_body, start_ms, exc)
+                    raise
+                finally:
+                    _in_urlopen.active = False
+
+                try:
+                    _tee_urllib3_response(response, call_id, full_url, method, request_body, start_ms)
+                except Exception:
+                    pass
+
+                return response
+
+            urllib3_module.HTTPConnectionPool.urlopen = patched_urlopen
+            _patched_modules.add("urllib3")
+        except Exception:
+            pass
+
     def _try_patch_all():
         """Runs on every hooked import, so it has to stay cheap."""
         for name in ("httpx", "httpx2"):
@@ -839,6 +1026,11 @@ if TRACE_OUTPUT and not _ALREADY_INSTALLED:
                     _patch_httpx(sys.modules[name], name)
             except Exception:
                 pass
+        try:
+            if "urllib3" in sys.modules and "urllib3" not in _patched_modules:
+                _patch_urllib3(sys.modules["urllib3"])
+        except Exception:
+            pass
 
     import builtins
 
@@ -847,7 +1039,7 @@ if TRACE_OUTPUT and not _ALREADY_INSTALLED:
     def _patched_import(name, *args, **kwargs):
         module = _original_import(name, *args, **kwargs)
         try:
-            if name.split(".", 1)[0] in ("httpx", "httpx2"):
+            if name.split(".", 1)[0] in ("httpx", "httpx2", "urllib3", "requests"):
                 _try_patch_all()
         except Exception:
             pass
@@ -868,7 +1060,7 @@ if TRACE_OUTPUT and not _ALREADY_INSTALLED:
         def _patched_import_module(name, package=None):
             module = _original_import_module(name, package)
             try:
-                if str(name).lstrip(".").split(".", 1)[0] in ("httpx", "httpx2"):
+                if str(name).lstrip(".").split(".", 1)[0] in ("httpx", "httpx2", "urllib3", "requests"):
                     _try_patch_all()
             except Exception:
                 pass
