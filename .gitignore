@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.agent-traces/
+*.tsbuildinfo
+.DS_Store
+
+# Python bytecode caches (regenerated when the interceptor runs)
+__pycache__/
+*.pyc
+
+# Local scratch notes — keep real docs (README.md, plan.md, specs) tracked
+chats.md
+
+# costcatch traces
+.costcatch/
+
+# Ignore all markdown files
+*.md
+
+# Do not ignore the README.md file
+!README.md
