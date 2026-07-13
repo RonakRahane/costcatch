@@ -1,0 +1,53 @@
+{
+  "name": "costcatch",
+  "version": "0.1.0",
+  "description": "Zero-instrumentation LLM agent tracer & cost tracker. Like `time` but for AI agents.",
+  "type": "module",
+  "bin": {
+    "costcatch": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "llm",
+    "agent",
+    "trace",
+    "debug",
+    "openai",
+    "anthropic",
+    "langchain",
+    "cli",
+    "cost",
+    "tokens"
+  ],
+  "author": "Ronak Rahane",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "cfonts": "^3.3.1",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "log-update": "^6.1.0",
+    "ora": "^8.2.0",
+    "string-width": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.1.0"
+  }
+}
