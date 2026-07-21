@@ -11,6 +11,7 @@ export const genericProvider: Provider = {
     /\/chat\/completions/,
     /\/v1\/completions/,
     /\/v1\/messages/,
+    /\/embeddings\/?(?:[?#]|$)/,
   ],
 
   parseRequest: parseBodyRequest,

@@ -85,9 +85,11 @@ if TRACE_OUTPUT and not _ALREADY_INSTALLED:
             _seq["n"] += 1
             return _seq["n"]
 
+    EMBEDDINGS_PATH = re.compile(r"/embeddings/?(?:[?#]|$)")
+
     def _is_llm_call(url):
         url_str = str(url)
-        return any(p in url_str for p in LLM_PATTERNS)
+        return any(p in url_str for p in LLM_PATTERNS) or EMBEDDINGS_PATH.search(url_str) is not None
 
     def _is_model_request(url, method):
         """Every model endpoint is a POST. A GET only lists models or fetches a stored result."""

@@ -53,6 +53,7 @@ const LLM_PATTERNS = [
   /\/v1\/messages/,
   /\/v1\/complete\b/,
   /\/v1\/responses\b/,
+  /\/embeddings\/?(?:[?#]|$)/,
   /:generateContent/,
   /:streamGenerateContent/,
 ];
