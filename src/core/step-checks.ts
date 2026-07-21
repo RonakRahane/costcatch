@@ -46,11 +46,12 @@ export function countUnpriced(steps: Step[]): number {
   return n;
 }
 
-/** Null means unknown. */
+/** Null means unknown. A run where every call was rejected costs $0, since rejected calls aren't billed. */
 export function totalCost(steps: Step[]): number | null {
-  const priced = steps.filter((s): s is LLMStep => s.type === "llm" && s.costUsd !== null);
-  if (priced.length === 0) return null;
-  return priced.reduce((sum, s) => sum + (s.costUsd ?? 0), 0);
+  const calls = steps.filter((s): s is LLMStep => s.type === "llm");
+  const priced = calls.filter((s) => s.costUsd !== null);
+  if (priced.length > 0) return priced.reduce((sum, s) => sum + (s.costUsd ?? 0), 0);
+  return calls.length > 0 && calls.every(isRejectedCall) ? 0 : null;
 }
 
 // Older traces don't store unpricedCalls, so count them from the steps.

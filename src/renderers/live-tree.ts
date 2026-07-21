@@ -36,7 +36,7 @@ import {
   callBadge,
   tokenTotals,
 } from "./tree.js";
-import { isUnpricedCall, outputProblem, tokenGaps } from "../core/step-checks.js";
+import { isRejectedCall, isUnpricedCall, outputProblem, tokenGaps } from "../core/step-checks.js";
 
 // Rows left free above a full-height box for the program's own output.
 export const OUTPUT_ROWS = 3;
@@ -102,7 +102,7 @@ export interface LiveState {
   totalInputTokens: number;
   totalOutputTokens: number;
   totalCostUsd: number;
-  // True once some step is priced.
+  // True when some step is priced, or every step was rejected and so cost nothing.
   costKnown: boolean;
   // Some step is unpriced, so the total is a minimum and is shown with ≥.
   hasUnknownCost: boolean;
@@ -242,6 +242,7 @@ function earlierStepsRow(steps: LLMStep[], showCost: boolean, width: number): st
   let cost = 0;
   let priced = false;
   let unpriced = false;
+  let allRejected = true;
   for (const s of steps) {
     inTok += s.inputTokens ?? 0;
     outTok += s.outputTokens ?? 0;
@@ -251,12 +252,14 @@ function earlierStepsRow(steps: LLMStep[], showCost: boolean, width: number): st
     } else if (isUnpricedCall(s)) {
       unpriced = true;
     }
+    if (!isRejectedCall(s)) allRejected = false;
   }
   const parts = [
     `${c("accent", steps.length.toLocaleString())} ${dim(steps.length === 1 ? "earlier step" : "earlier steps")}`,
     tokenTotals(inTok, outTok, tokenGaps(steps)),
   ];
-  if (showCost) parts.push(priced ? c("cost", `${unpriced ? "≥" : ""}${formatCost(cost)}`) : dim("$…"));
+  // If every step was rejected the cost is $0.00, not unknown.
+  if (showCost) parts.push(priced || allRejected ? c("cost", `${unpriced ? "≥" : ""}${formatCost(cost)}`) : dim("$…"));
   const failures = countFailures(steps);
   const errors = failures.calls + failures.tools;
   if (errors > 0) parts.push(c("err", `${errors} ${errors === 1 ? "error" : "errors"}`));

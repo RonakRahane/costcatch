@@ -122,7 +122,7 @@ export interface Trace {
   script: string;
   runtime: "python" | "node";
   durationMs: number;
-  // A lower bound when summary.unpricedCalls > 0. Null if nothing was priced.
+  // A lower bound when summary.unpricedCalls > 0. Null if nothing was priced, or 0 if all were rejected.
   totalCostUsd: number | null;
   steps: Step[];
   warnings: TraceWarning[];

@@ -28,7 +28,7 @@ import { dim, glyph, terminalSize, visibleLength, reservedColumnCount, truncate,
 import { findTerminalSharers, describeCommand, type Sharer } from "./terminal-sharers.js";
 import { formatCost, roundUsd } from "../core/cost-calculator.js";
 import { callMark, formatArgs, isFailedCall, oneLine } from "../renderers/tree.js";
-import { isUnpricedCall } from "../core/step-checks.js";
+import { isRejectedCall, isUnpricedCall } from "../core/step-checks.js";
 import { redactString } from "../core/redact.js";
 
 const FRAME_MS = 80;
@@ -109,6 +109,8 @@ function createLiveAccumulator(ctx: RunContext) {
   let cost = 0;
   let hasKnown = false;
   let hasUnknown = false;
+  // If every call was rejected, the total is $0 rather than unknown.
+  let allRejected = true;
   let flushed = 0;
 
   // Numbers calls by start time the way the final trace does, counting calls still in flight.
@@ -168,6 +170,7 @@ function createLiveAccumulator(ctx: RunContext) {
         // Rejected calls (like a 429) cost nothing, so they don't make the total unknown.
         hasUnknown = true;
       }
+      if (!isRejectedCall(step)) allRejected = false;
     }
     return { added, failedTools };
   }
@@ -193,7 +196,7 @@ function createLiveAccumulator(ctx: RunContext) {
         totalInputTokens: inTok,
         totalOutputTokens: outTok,
         totalCostUsd: cost,
-        costKnown: hasKnown,
+        costKnown: hasKnown || (steps.length > 0 && allRejected),
         hasUnknownCost: hasUnknown,
         showCost: ctx.showCost,
         flushed,

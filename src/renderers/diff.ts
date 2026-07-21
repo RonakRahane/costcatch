@@ -122,11 +122,12 @@ function renderCostLine(
 ): string {
   const label = "Cost".padEnd(16);
 
-  if (before === null || delta === null) {
+  // A change from $0 can't be shown as a percentage.
+  if (before === null || delta === null || before === 0) {
     return `${c.dim(label)} ${beforeText.padStart(8)} → ${afterText.padEnd(8)}`;
   }
 
-  const pct = before > 0 ? Math.round((delta / before) * 100) : 0;
+  const pct = Math.round((delta / before) * 100);
   const sign = pct > 0 ? "+" : "";
   const color = delta < 0 ? c.green : c.red;
   const check = delta < 0 ? " ✓" : "";
