@@ -53,6 +53,7 @@ export const cohereProvider: Provider = {
       toolCalls,
       isStreaming: request.isStreaming,
       finishReason,
+      usage: usage ?? getObject(body, "meta"),
     };
   },
 };

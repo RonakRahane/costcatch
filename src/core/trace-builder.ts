@@ -306,6 +306,18 @@ function redactValue(value: unknown, pii: boolean, depth = 0): unknown {
   return out;
 }
 
+const MAX_USAGE_CHARS = 4_096;
+
+function providerUsageOf(usage: Record<string, unknown> | null | undefined, pii: boolean): Record<string, unknown> | null {
+  if (!usage) return null;
+  try {
+    if ((JSON.stringify(usage) ?? "").length > MAX_USAGE_CHARS) return null;
+  } catch {
+    return null;
+  }
+  return redactValue(usage, pii) as Record<string, unknown>;
+}
+
 // OpenAI's Responses API sends "error": null on success, so only an object counts.
 function carriesError(body: unknown): boolean {
   if (body === null || typeof body !== "object" || Array.isArray(body)) return false;
@@ -415,6 +427,7 @@ function buildStep(
       reasoningTokens: parsed.reasoningTokens,
       cachedTokens: parsed.cachedTokens,
       costUsd,
+      providerUsage: providerUsageOf(parsed.usage, redactPii),
       toolCalls: redactToolCalls(parsed.toolCalls, redactPii, argKeys),
       isStreaming: parsed.isStreaming,
       finishReason: oneLine(redactString(parsed.finishReason, redactPii)),

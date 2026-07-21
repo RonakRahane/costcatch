@@ -117,6 +117,7 @@ export function parseOpenAICompatibleResponse(
     isStreaming: request.isStreaming,
     finishReason: firstChoice ? getString(firstChoice, "finish_reason", "unknown") : "unknown",
     ...openAIBilling(provider, body),
+    usage,
   };
 }
 
@@ -176,5 +177,6 @@ function parseResponsesApi(
     isStreaming: request.isStreaming,
     finishReason: incompleteReason || getString(response, "status", "unknown"),
     ...openAIBilling(provider, response),
+    usage,
   };
 }

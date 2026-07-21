@@ -150,6 +150,12 @@ function coerceToolCalls(value: unknown): LLMStep["toolCalls"] {
   });
 }
 
+function coerceProviderUsage(value: unknown): Pick<LLMStep, "providerUsage"> {
+  if (value === null) return { providerUsage: null };
+  if (typeof value !== "object" || Array.isArray(value)) return {};
+  return { providerUsage: stripControlDeep(value) as Record<string, unknown> };
+}
+
 function stripControlDeep(value: unknown, depth = 0): unknown {
   if (typeof value === "string") return stripControl(value);
   if (value === null || typeof value !== "object") return value;
@@ -234,6 +240,7 @@ function coerceStep(value: unknown): Step | null {
     cachedTokens: nullableNum(s.cachedTokens),
     reasoningTokens: nullableNum(s.reasoningTokens),
     costUsd: nullableNum(s.costUsd),
+    ...coerceProviderUsage(s.providerUsage),
     toolCalls: coerceToolCalls(s.toolCalls),
     isStreaming: s.isStreaming === true,
     finishReason: safeString(s.finishReason, "unknown"),

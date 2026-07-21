@@ -72,6 +72,7 @@ export const anthropicProvider: Provider = {
         // Web searches are billed per search on top of tokens. Web fetches cost only their tokens.
         webSearches: getNumber(getObject(usage, "server_tool_use"), "web_search_requests"),
       },
+      usage,
     };
   },
 };

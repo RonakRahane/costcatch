@@ -38,9 +38,19 @@ export const ollamaProvider: Provider = {
       toolCalls,
       isStreaming: request.isStreaming,
       finishReason: doneReason,
+      usage: ollamaUsage(body),
     };
   },
 };
+
+// Ollama reports these at the top level. Durations are in nanoseconds.
+const OLLAMA_USAGE = new Set(["total_duration", "load_duration", "prompt_eval_count", "prompt_eval_duration", "eval_count", "eval_duration"]);
+
+function ollamaUsage(body: unknown): Record<string, unknown> | null {
+  if (body === null || typeof body !== "object") return null;
+  const usage = Object.fromEntries(Object.entries(body).filter(([key]) => OLLAMA_USAGE.has(key)));
+  return Object.keys(usage).length > 0 ? usage : null;
+}
 
 // Same as OpenAI's tool_calls, except arguments is an object instead of a JSON string.
 function parseOllamaToolCalls(message: Record<string, unknown>): ToolCall[] {

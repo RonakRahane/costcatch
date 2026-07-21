@@ -65,6 +65,7 @@ export const googleProvider: Provider = {
       outputTokens,
       cachedTokens,
       reasoningTokens,
+      usage: usageMetadata,
       toolCalls,
       isStreaming: request.isStreaming,
       finishReason,

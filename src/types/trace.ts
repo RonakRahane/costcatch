@@ -71,6 +71,8 @@ export interface LLMStep extends StepBase {
   reasoningTokens: number | null;
   // Null when the model's price is unknown.
   costUsd: number | null;
+  // The provider's usage object, redacted. Null when the response had none.
+  providerUsage?: Record<string, unknown> | null;
   toolCalls: ToolCall[];
   isStreaming: boolean;
   finishReason: string;

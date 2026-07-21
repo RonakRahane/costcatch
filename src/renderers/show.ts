@@ -132,6 +132,12 @@ function renderStepContent(step: LLMStep, width: number, grep: string | null, ga
   if (gapMs !== undefined) {
     rows.push(frameLine(`  ${dim(`next LLM call ${fmtDuration(gapMs)} after this one ended (your code and tools)`)}`, width));
   }
+  if (step.providerUsage) {
+    const label = "provider usage ";
+    wrapJson(JSON.stringify(step.providerUsage), Math.max(10, inner - 2 - label.length)).forEach((line, i) => {
+      rows.push(frameLine(`  ${dim((i === 0 ? label : " ".repeat(label.length)) + line)}`, width));
+    });
+  }
 
   if (!step.content) {
     rows.push(frameLine(dim("  no content captured, re-run with the latest costcatch to inspect"), width));
@@ -236,6 +242,20 @@ function highlightLine(text: string, grep: string | null): string {
   return text.replace(re, (m) => chalk.bgYellow.black(m));
 }
 
+function wrapJson(json: string, maxWidth: number): string[] {
+  const lines: string[] = [];
+  let current = "";
+  for (const piece of json.split(/(?<=,)/)) {
+    if (current !== "" && visibleLength(current + piece) > maxWidth) {
+      lines.push(current);
+      current = "";
+    }
+    current += piece;
+  }
+  if (current !== "") lines.push(current);
+  return lines.flatMap((line) => wrapText(line, maxWidth));
+}
+
 function wrapText(text: string, maxWidth: number): string[] {
   if (maxWidth <= 0) return [text];
   const rawLines = text.split("\n");
@@ -303,6 +323,7 @@ function renderShowPlain(trace: Trace, opts: ShowOptions): string {
     if (problem) lines.push(`  WARNING: ${describeOutputProblem(problem, step.toolCalls.length > 0)}`);
     const gap = gaps.get(step.id);
     if (gap !== undefined) lines.push(`  NEXT CALL: ${fmtDuration(gap)} after this one ended (your code and tools)`);
+    if (step.providerUsage) lines.push(`  PROVIDER USAGE: ${JSON.stringify(step.providerUsage)}`);
 
     if (!step.content) {
       lines.push("  (no content captured, re-run to inspect)");

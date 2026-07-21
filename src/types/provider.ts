@@ -18,6 +18,7 @@ export interface ParsedLLMCall {
   // What the provider says it charged, which beats our price table when present.
   reportedCostUsd?: number | null;
   billing?: BillingDetail;
+  usage?: Record<string, unknown> | null;
 }
 
 // A field the response didn't report means list price.
