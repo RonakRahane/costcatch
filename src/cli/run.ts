@@ -34,6 +34,7 @@ import { getProviderNames } from "../providers/registry.js";
 import type { Trace, LLMStep } from "../types/trace.js";
 import { redactString } from "../core/redact.js";
 import { ENV_MAX_TRACE_BYTES } from "../core/constants.js";
+import { getPricingInfo } from "../pricing/pricing-db.js";
 
 export async function runCommand(userCommand: string[], flags: RunFlags): Promise<number> {
   const useColor = !flags.noColor && !process.env.NO_COLOR;
@@ -193,6 +194,14 @@ export async function runCommand(userCommand: string[], flags: RunFlags): Promis
       notice("warn", "PII redaction is OFF (--no-redact).", [
         "Emails, phone numbers and card numbers were captured as written.",
         shouldSave ? "The saved trace contains them in plain text." : "Nothing was saved, so they exist only in this output.",
+      ]),
+    );
+  }
+
+  if (ctx.showCost && unpricedCallsOf(trace) > 0 && getPricingInfo().source === "bundled" && !flags.json && !flags.quiet) {
+    console.log(
+      notice("warn", "Some calls could not be priced: run `costcatch init` first.", [
+        "It downloads current prices for every model. Until then only a small bundled list is used.",
       ]),
     );
   }
