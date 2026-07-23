@@ -166,17 +166,27 @@ function parseResponsesApi(
 
   const incompleteReason = getString(getObject(response, "incomplete_details"), "reason");
 
+  // Cache writes are counted in input_tokens, like cache reads.
+  const inputDetails = getObject(usage, "input_tokens_details");
+  const cacheWriteTokens = getNumber(inputDetails, "cache_write_tokens");
+  const billing: BillingDetail = { ...openAIBilling(provider, response).billing };
+  if (cacheWriteTokens !== null) {
+    billing.cacheWritesNeedListedRate = true;
+    billing.cacheWrite12hTokens = getNumber(getObject(inputDetails, "cache_write_tokens_details"), "ttl_12h_tokens");
+  }
+
   return {
     provider,
     model: getString(response, "model", request.model),
     inputTokens: getNumber(usage, "input_tokens"),
     outputTokens: getNumber(usage, "output_tokens"),
-    cachedTokens: getNumber(getObject(usage, "input_tokens_details"), "cached_tokens"),
+    cachedTokens: getNumber(inputDetails, "cached_tokens"),
+    cacheWriteTokens,
     reasoningTokens: getNumber(getObject(usage, "output_tokens_details"), "reasoning_tokens"),
     toolCalls,
     isStreaming: request.isStreaming,
     finishReason: incompleteReason || getString(response, "status", "unknown"),
-    ...openAIBilling(provider, response),
+    ...(Object.keys(billing).length > 0 ? { billing } : {}),
     usage,
   };
 }

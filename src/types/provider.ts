@@ -25,6 +25,10 @@ export interface ParsedLLMCall {
 export interface BillingDetail {
   // Anthropic's one-hour cache writes, already counted in cacheWriteTokens.
   cacheWrite1hTokens?: number | null;
+  // OpenAI's 12-hour cache writes, already counted in cacheWriteTokens.
+  cacheWrite12hTokens?: number | null;
+  // OpenAI only charges for cache writes on some models, so these need a listed rate to be priced.
+  cacheWritesNeedListedRate?: boolean;
   serviceTier?: string | null;
   inferenceGeo?: string | null;
   speed?: string | null;

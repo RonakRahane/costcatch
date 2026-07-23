@@ -10,6 +10,9 @@ const CACHE_WRITE_MULTIPLIER = 1.25;
 
 const CACHE_WRITE_1H_MULTIPLIER = 2;
 
+// OpenAI charges 2.5x input for 12-hour cache writes, and no price list includes that rate.
+const CACHE_WRITE_12H_MULTIPLIER = 2.5;
+
 const LIST_PRICE_CONDITIONS = new Set(["", "global", "standard"]);
 
 // Anthropic charges 1.1x for US-only inference. Older models reject that option, so a US call always paid it.
@@ -41,12 +44,21 @@ export function calculateStepCost(
   const cached = Math.min(cachedTokens ?? 0, inputTokens);
   const written = Math.min(cacheWriteTokens ?? 0, inputTokens - cached);
   const writtenForAnHour = Math.min(billing.cacheWrite1hTokens ?? 0, written);
+  const writtenFor12Hours = Math.min(billing.cacheWrite12hTokens ?? 0, written - writtenForAnHour);
   const nonCached = inputTokens - cached - written;
   const readRate = rates.cacheReadCostPerToken ?? rates.inputCostPerToken * CACHE_DISCOUNT;
-  const writeRate = rates.cacheWriteCostPerToken ?? rates.inputCostPerToken * CACHE_WRITE_MULTIPLIER;
+  // OpenAI only charges for cache writes on some models, so an unlisted OpenAI write rate is unknown.
+  const writeRate =
+    rates.cacheWriteCostPerToken ?? (billing.cacheWritesNeedListedRate ? null : rates.inputCostPerToken * CACHE_WRITE_MULTIPLIER);
+  if (written > 0 && writeRate === null) return null;
   const hourRate = rates.cacheWrite1hCostPerToken ?? rates.inputCostPerToken * CACHE_WRITE_1H_MULTIPLIER;
+  const twelveHourRate = rates.inputCostPerToken * CACHE_WRITE_12H_MULTIPLIER;
   const inputCost =
-    nonCached * rates.inputCostPerToken + cached * readRate + (written - writtenForAnHour) * writeRate + writtenForAnHour * hourRate;
+    nonCached * rates.inputCostPerToken +
+    cached * readRate +
+    (written - writtenForAnHour - writtenFor12Hours) * (writeRate ?? 0) +
+    writtenForAnHour * hourRate +
+    writtenFor12Hours * twelveHourRate;
   const outputCost = outputTokens * rates.outputCostPerToken;
   // Web searches are a flat fee, so the token multipliers don't apply to them.
   const searchCost = searches * (pricing.webSearchCostPerQuery ?? 0);
