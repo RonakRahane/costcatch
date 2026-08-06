@@ -23,12 +23,16 @@ export const googleProvider: Provider = {
     /aiplatform\.googleapis\.com/,
   ],
 
-  parseRequest(body: unknown): ParsedRequest {
-    // Gemini uses the URL path for model selection, not request body.
-    // Model is extracted from the URL by the trace builder.
+  parseRequest(body: unknown, url?: string): ParsedRequest {
+    // Gemini names the model in the PATH, not the body:
+    //   /v1beta/models/gemini-2.0-flash:generateContent
+    // Reading only the body left every Gemini call labelled "gemini" with an
+    // unknown price, so the URL is the primary source here.
+    const fromUrl = url ? extractGeminiModel(url) : null;
+    const fromBody = getString(body, "model", "");
     return {
-      model: getString(body, "model", "gemini"),
-      isStreaming: getBoolean(body, "stream"),
+      model: fromUrl ?? (fromBody ? stripModelsPrefix(fromBody) : "gemini"),
+      isStreaming: url ? url.includes(":streamGenerateContent") : getBoolean(body, "stream"),
     };
   },
 
@@ -65,6 +69,28 @@ export const googleProvider: Provider = {
     };
   },
 };
+
+/**
+ * Pull the model id out of a Gemini endpoint URL.
+ *
+ * Covers both the Generative Language API and Vertex AI:
+ *   https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
+ *   https://us-central1-aiplatform.googleapis.com/v1/projects/p/locations/l/publishers/google/models/gemini-1.5-pro:streamGenerateContent
+ *
+ * Returns null when the path does not name a model, so the caller can fall back
+ * to the body rather than inventing a value.
+ */
+function extractGeminiModel(url: string): string | null {
+  const match = /\/models\/([^/:?#]+)/.exec(url);
+  if (!match) return null;
+  const model = decodeURIComponent(match[1]).trim();
+  return model.length > 0 ? model : null;
+}
+
+/** `models/gemini-2.0-flash` → `gemini-2.0-flash`. */
+function stripModelsPrefix(model: string): string {
+  return model.startsWith("models/") ? model.slice("models/".length) : model;
+}
 
 /**
  * Parse tool calls from Gemini's content parts format.

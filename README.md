@@ -1,15 +1,15 @@
 <div align="center">
 
-# agent-trace ⚡
+# costcatch ⚡
 
 ### Zero-instrumentation, terminal-native LLM agent tracer
 
 **Like `time`, but for AI agents.**
 
-[![npm version](https://img.shields.io/npm/v/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
+[![npm version](https://img.shields.io/npm/v/costcatch.svg)](https://www.npmjs.com/package/costcatch)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
-[![Tests](https://img.shields.io/badge/tests-131%20passing-brightgreen.svg)](#testing)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen.svg)](https://nodejs.org)
+[![CI](https://github.com/costcatch/costcatch/actions/workflows/ci.yml/badge.svg)](https://github.com/costcatch/costcatch/actions/workflows/ci.yml)
 
 **No code changes. No SDK. No account. No API keys given to us. Fully local.**
 
@@ -17,41 +17,46 @@
 
 ---
 
-## What is agent-trace?
+## What is costcatch?
 
-`agent-trace` is a CLI tool that captures every LLM API call your AI agent makes — models, tokens, cost, tool calls, conversation content, errors, and retries — and renders it as a live, in-place trace right in your terminal.
+`costcatch` captures every LLM API call your AI agent makes — models, tokens,
+cost, tool calls, conversation content, errors, and retries — and renders it as
+a live, in-place trace in your terminal.
 
-You prefix your command with `agent-trace`, exactly like you'd prefix a command with `time`:
+You prefix your command with `costcatch`, exactly like you'd prefix it with `time`:
 
 ```bash
-agent-trace python my_agent.py
-agent-trace node   my_agent.js
+costcatch python my_agent.py
+costcatch node   my_agent.js
 ```
 
 While your program runs, you see a live dashboard:
 
 ```
-╭─ ⚡ agent-trace ───────────────────────────────────────── ⧗ 18.3s  $0.21 ─╮
-│                                                                            │
-│ ✓ ① claude-sonnet-4-6    0.8s   1,203 → 87 tok   $0.004                   │
-│    └─ ⚡ web_search("Tesla Q4 2024 revenue")                              │
-│                                                                            │
-│ ✓ ② claude-sonnet-4-6    1.4s   5,891 → 92 tok   $0.019                   │
+┌─ ⚡ costcatch ────────────────────────────────────────── ⧗ 18.3s  $0.21 ─┐
+│                                                                          │
+│ ✓ ① claude-sonnet-4        0.8s   1,203 → 87 tok   $0.004                │
+│    └─ ⚡ web_search("Tesla Q4 2024 revenue")                             │
+│                                                                          │
+│ ✓ ② claude-sonnet-4        1.4s   5,891 → 92 tok   $0.019                │
 │    ⚠ context grew 4.9× (1,203 → 5,891 tok)                               │
-│                                                                            │
-│ ⠹ ·· claude-sonnet-4-6   2.3s   thinking…                                │
-│                                                                            │
-│ ── summary                                                                 │
-│ 3 LLM calls  ·  2 tool calls  ·  18.3s  ·  $0.21                          │
-│ 20k → 271 tok  ·  at 100 runs/day = $630/mo                               │
-╰─ 3 calls · 20k→271 tok · $0.21 ──────────────────────────────────────────╯
+│                                                                          │
+│ ⠹ ·· claude-sonnet-4       2.3s   thinking…                              │
+│                                                                          │
+│ ── summary                                                               │
+│ 3 LLM calls  ·  2 tool calls  ·  18.3s  ·  $0.21                         │
+│ 20k → 271 tok  ·  at 100 runs/day = $630/mo                              │
+└─ 3 calls · 20k→271 tok · $0.21 ──────────────────────────────────────────┘
 ```
 
-In-flight calls show a live spinner and ticking timer. Completed calls settle into the tree with exact tokens and cost. Your program's own stdout scrolls above the box, untouched. On exit, the live region collapses into one clean, final trace.
+In-flight calls show a live spinner and ticking timer. Completed calls settle
+into the tree with exact tokens and cost. Your program's own stdout scrolls
+above the box, untouched. On exit, the live region collapses into one clean,
+final trace.
 
 ---
 
-## Why agent-trace?
+## Why costcatch?
 
 Every existing LLM tracer has a tax:
 
@@ -63,12 +68,12 @@ Every existing LLM tracer has a tax:
 | **OpenTelemetry** | Takes an afternoon to wire up with custom spans |
 | **Datadog LLM Observability** | Enterprise pricing, agent overhead |
 
-`agent-trace` has **zero tax**:
+`costcatch` has **zero tax**:
 
 - ✅ Works by **prefixing your command** — no code changes, no SDK imports, no decorators
 - ✅ Captures at the **HTTP layer** — survives SDK version bumps, works across any library
 - ✅ **Fully local** — your data never leaves your machine
-- ✅ **Free and open source** — MIT license, no account, no cloud, no telemetry
+- ✅ **Free and open source** — MIT, no account, no cloud, no telemetry
 
 ---
 
@@ -78,29 +83,15 @@ Every existing LLM tracer has a tax:
 - [Quick Start](#quick-start)
 - [How It Works](#how-it-works)
 - [Commands](#commands)
-  - [run (default)](#run-default)
-  - [show](#show)
-  - [replay](#replay)
-  - [diff](#diff)
-  - [stats](#stats)
-  - [watch](#watch)
-  - [init](#init)
 - [Features](#features)
-  - [Live Terminal Dashboard](#live-terminal-dashboard)
-  - [Content Inspection](#content-inspection-show--inspect)
-  - [Auto-Diff for Prompt Iteration](#auto-diff-for-prompt-iteration-compare-last)
-  - [CI Assertion Gates](#ci-assertion-gates)
-  - [Warning Engine](#warning-engine)
-  - [Error & Retry Surfacing](#error--retry-surfacing)
-  - [Automatic Secret & PII Redaction](#automatic-secret--pii-redaction)
-  - [Cost Tracking](#cost-tracking)
-  - [Aggregated Analytics](#aggregated-analytics)
 - [Supported Providers](#supported-providers)
 - [Streaming & Token Accuracy](#streaming--token-accuracy)
+- [Exit Codes](#exit-codes)
+- [Environment Variables](#environment-variables)
 - [Honest Limitations](#honest-limitations)
 - [Architecture](#architecture)
 - [Development](#development)
-- [Testing](#testing)
+- [Security](#security)
 - [License](#license)
 
 ---
@@ -108,100 +99,119 @@ Every existing LLM tracer has a tax:
 ## Install
 
 ```bash
-npm install -g agent-trace
+npm install -g costcatch
 ```
 
 Then, in your project directory:
 
 ```bash
-agent-trace init
+costcatch init
 ```
 
-This creates `.agent-traces/` (and `.gitignore`s it) and fetches the latest model pricing database (300+ models).
+This creates `.costcatch/` (and `.gitignore`s it) and fetches the latest model
+pricing database from LiteLLM. Use `costcatch init --offline` to skip the
+download and stay on the bundled price snapshot.
 
 > **Python support ships inside the npm package** — there is nothing to `pip install`.
 
 ### Requirements
 
-- Node.js ≥ 18
-- Python 3.7+ (for tracing Python agents — no pip install required)
+- Node.js ≥ 18.17
+- Python 3.8+ (only for tracing Python agents — no pip install required)
 
 ---
 
 ## Quick Start
 
-### Trace a Python agent
+> **Flags come first.** Like `time` and `env`, costcatch treats everything from
+> your program's name onward as *your* command — so `costcatch --save python
+> agent.py` saves the trace, while `costcatch python agent.py --save` passes
+> `--save` to your agent. costcatch warns you if it spots one of its own flags
+> in that position.
 
 ```bash
-agent-trace python my_agent.py
+# Trace a Python agent
+costcatch python my_agent.py
+
+# Trace a Node.js agent
+costcatch node my_agent.js
+
+# Save the trace for later inspection
+costcatch --save python my_agent.py
+
+# Read what the model actually saw and said
+costcatch show .costcatch/2026-07-25T14-32-17-my_agent.json
+costcatch show trace.json --step 3           # zoom into step 3
+costcatch show trace.json --grep "search"    # find + highlight a string
+
+# Iterate on a prompt and see what changed
+costcatch --save python my_agent.py
+#   …edit your prompt…
+costcatch --save --compare-last python my_agent.py
+
+# Use as a CI regression gate
+costcatch --max-cost 0.10 --max-calls 8 python tests/agent_test.py
 ```
 
-### Trace a Node.js agent
+### Passing flags to *your* program
+
+Because the split happens at the first runtime executable, your program's flags
+stay yours automatically:
 
 ```bash
-agent-trace node my_agent.js
+costcatch --save python agent.py --verbose --json   # --verbose/--json go to agent.py
 ```
 
-### Save the trace for later inspection
+If your command doesn't start with a recognized runtime, or you want to pass
+through something costcatch also defines, use `--`:
 
 ```bash
-agent-trace python my_agent.py --save
-```
-
-### Inspect what the model actually saw and said
-
-```bash
-agent-trace show .agent-traces/latest-trace.json
-agent-trace show trace.json --step 3          # zoom into step 3
-agent-trace show trace.json --grep "search"   # find + highlight a string
-```
-
-### Iterate on a prompt and see what changed
-
-```bash
-# First run:
-agent-trace python my_agent.py --save
-# Edit your prompt, re-run:
-agent-trace python my_agent.py --save --compare-last
-```
-
-### Use as a CI regression gate
-
-```bash
-agent-trace python tests/agent_test.py --max-cost 0.10 --max-calls 8
-# Exit code 1 if cost or call count exceeds the threshold
+costcatch --save -- python agent.py --save   # the second --save goes to agent.py
+costcatch --save -- poetry run python agent.py
 ```
 
 ---
 
 ## How It Works
 
-`agent-trace` spawns your program with a runtime-specific hook injected, captures all outbound HTTP requests to known LLM provider endpoints, streams them to a temp NDJSON file, and renders the trace in real time.
+`costcatch` spawns your program with a runtime-specific hook injected, captures
+outbound HTTP requests to known LLM endpoints, streams them to a temporary
+NDJSON file, and renders the trace in real time.
 
-### Node.js Interception
+### Node.js interception
 
-Injects an interceptor via `node --require` that monkey-patches `https.request`, `http.request`, and `globalThis.fetch`. Every matched request is captured with full request/response bodies, timing, and status codes.
+Injects an interceptor via `node --require` that patches `https.request`,
+`http.request`, `https.get`, `http.get`, and `globalThis.fetch`.
 
-### Python Interception
+### Python interception
 
-Prepends a directory to `PYTHONPATH` so a `sitecustomize.py` auto-loads and patches `httpx.Client`, `httpx.AsyncClient`, and `urllib3.HTTPConnectionPool` (which covers `requests`, most SDKs, LangChain, LiteLLM, CrewAI, etc.).
+Prepends a directory to `PYTHONPATH` so a `sitecustomize.py` auto-loads and
+patches `httpx.Client`, `httpx.AsyncClient`, and `urllib3.HTTPConnectionPool`
+(which covers `requests`, most SDKs, LangChain, LiteLLM, CrewAI, and friends).
+If your environment already had its own `sitecustomize`, costcatch chains to it
+rather than shadowing it.
 
-### Safety Guarantees
+### Safety guarantees
 
-The interceptor is **purely observational**:
+The interceptor is **purely observational**, and this is the property the whole
+design is built around:
 
-- Every patch is wrapped in `try/except` — if anything goes wrong, your program still runs correctly
-- Response bodies are read without consuming them (BytesIO splicing for Python, buffer cloning for Node)
-- The interceptor never modifies request headers, bodies, or timing
-- Everything stays 100% local — no data is sent anywhere
+- Every patched path is wrapped so an internal failure degrades to "captured
+  nothing", never "broke your agent"
+- Response bodies are cloned or spliced back — never consumed out from under you
+- Streamed responses are tee'd as *you* consume them, so `stream=True` works
+- An error your program didn't handle stays unhandled: installing costcatch will
+  not turn a crash into a silent hang
+- Buffering is bounded (2 MiB/response, 64 MiB/run) so a tracer can never OOM
+  the program it's watching
+- Request headers are never read, so your API keys are never in a trace
 
-### Two-Phase Protocol
+### Two-phase protocol
 
-Interceptors emit a lightweight `phase: "start"` record the moment a matched request is dispatched, followed by a `phase: "end"` record when the response completes. This enables:
-
-- Showing in-flight calls with a spinner + ticking timer
-- Correct timing even when calls overlap (parallel tool execution)
-- Progressive rendering before the response arrives
+Interceptors emit a `phase: "start"` record when a matched request is
+dispatched, then a `phase: "end"` record when the response completes. That's
+what enables in-flight spinners, correct timing for overlapping calls, and
+progressive rendering.
 
 ---
 
@@ -209,57 +219,71 @@ Interceptors emit a lightweight `phase: "start"` record the moment a matched req
 
 ### `run` (default)
 
-Trace any Python or Node.js command. `run` is the default — you can omit it.
+Trace any Python or Node.js command. `run` is optional.
 
 ```bash
-agent-trace python my_agent.py
-agent-trace run node my_agent.js  # equivalent
+costcatch python my_agent.py
+costcatch run node my_agent.js   # equivalent
 ```
-
-**Flags:**
 
 | Flag | Description |
 |------|-------------|
-| `--save` | Save the trace to `.agent-traces/` |
-| `--save-as <name>` | Save with a specific filename |
+| `--save` | Save the trace to `.costcatch/` |
+| `--save-as <name>` | Save with a specific filename (overwrites) |
 | `--inspect` | After the run, show the full conversation content of every step |
 | `--compare-last` | Auto-diff against the most recent saved trace for this script (implies `--save`) |
-| `--max-cost <usd>` | **CI gate**: exit code 1 if total cost exceeds N USD |
-| `--max-calls <n>` | **CI gate**: exit code 1 if LLM call count exceeds N |
-| `--budget <usd>` | Mid-run guard: warn/abort if cost exceeds N USD during the run |
+| `--max-cost <usd>` | **CI gate**: exit 1 if total cost exceeds N USD |
+| `--max-calls <n>` | **CI gate**: exit 1 if LLM call count exceeds N |
+| `--budget <usd>` | **Mid-run guard**: terminate the program once spend passes N USD |
+| `--threshold <ms>` | Flag LLM calls slower than N ms (default 10000) |
+| `--filter <provider>` | Only trace one provider, e.g. `--filter anthropic` |
 | `--no-cost` | Hide the cost column |
-| `--json` | Emit the trace as JSON (for `jq` / CI). Suppresses all animation |
-| `--no-color` | Plain, ANSI-free output (also honors `NO_COLOR` env var) |
-| `--filter <provider>` | Only show calls to one provider (e.g. `--filter anthropic`) |
-| `--threshold <ms>` | Warn on LLM calls slower than N ms |
+| `--no-redact` | Keep PII in captured content (secrets are still redacted) |
+| `--json` | Emit the trace as JSON, for `jq` / CI. Suppresses all animation |
+| `--no-color` | Plain, ANSI-free output (also honors `NO_COLOR`) |
 | `--quiet` | Print only the one-line summary |
-| `--stream` | Hint for streamed responses (see [Streaming](#streaming--token-accuracy)) |
 
-**Output modes:**
+**`--max-cost` and unknown pricing.** If any call in the trace uses a model
+costcatch can't price, the gate **fails** rather than passing. A gate that
+silently succeeds when it can't be evaluated isn't a gate.
 
-The live TUI (animated box with spinners) activates only on an interactive, colored terminal. In CI, when piped, with `--json`, `--quiet`, or `--no-color`, output falls back to clean sequential lines — no cursor control, safe for log files.
+**Output modes.** The live TUI activates only on an interactive, colored
+terminal. In CI, when piped, or with `--json` / `--quiet` / `--no-color`, output
+falls back to clean sequential lines — no cursor control, safe for log files.
 
 ---
 
 ### `show`
 
-**Inspect the actual conversation** — system prompt, messages, model output, errors — for every step in a saved trace.
+Read the actual conversation — system prompt, messages, model output, errors —
+for every step in a saved trace.
 
 ```bash
-agent-trace show trace.json               # all steps
-agent-trace show trace.json --step 3      # zoom into step 3
-agent-trace show trace.json --grep "loop"  # search + highlight matches
+costcatch show trace.json               # all steps
+costcatch show trace.json --step 3      # zoom into step 3
+costcatch show trace.json --grep "loop" # search + highlight matches
 ```
 
-This is the highest-value command. Agent debugging is almost never "what did it call?" — it's **"what was in the prompt that made it loop?"**
+Agent debugging is almost never "what did it call?" — it's **"what was in the
+prompt that made it loop?"**
 
-| Flag | Description |
-|------|-------------|
-| `--step <n>` | Show only step N (1-indexed) |
-| `--grep <term>` | Search for a string across all steps, highlight matches |
-| `--no-color` | Plain text output |
+---
 
-**Backward-compatible:** Old traces saved before content capture was added will show `no content captured — re-run to inspect` instead of crashing.
+### `estimate`
+
+Estimate token count and cost for a prompt *before* you send it.
+
+```bash
+costcatch estimate prompt.txt --model gpt-4o
+costcatch estimate --text "You are a helpful assistant..."
+cat prompt.md | costcatch estimate --model gpt-4o,claude-sonnet-4
+costcatch estimate prompt.txt --breakdown       # per-section distribution
+costcatch estimate prompt.txt --max-cost 0.05   # CI gate
+```
+
+Estimates are character-ratio based (±10–15% for English prose) — see
+[Streaming & Token Accuracy](#streaming--token-accuracy) for why, and note that
+*traced* token counts are exact, never estimated.
 
 ---
 
@@ -268,33 +292,19 @@ This is the highest-value command. Agent debugging is almost never "what did it 
 Re-render a saved trace without re-running the script.
 
 ```bash
-agent-trace replay .agent-traces/2026-07-09T14-32-17.json
-agent-trace replay trace.json --json   # machine-readable output
+costcatch replay .costcatch/2026-07-25T14-32-17-agent.json
+costcatch replay trace.json --json
 ```
-
-| Flag | Description |
-|------|-------------|
-| `--json` | Output as JSON |
-| `--cost` | Show cost breakdown (default: on) |
-| `--no-color` | Plain text output |
 
 ---
 
 ### `diff`
 
-Compare two saved traces side by side — steps, tokens, cost, latency, added/removed tool calls.
+Compare two saved traces — steps, tokens, cost, latency, added/removed tool calls.
 
 ```bash
-agent-trace diff before.json after.json
+costcatch diff before.json after.json
 ```
-
-Shows:
-
-- Step count, LLM calls, tool calls (with ✓ if reduced)
-- Duration change (with percentage)
-- Cost change (with percentage, ✓ if reduced)
-- Token delta per step
-- Exact tool calls added or removed
 
 ---
 
@@ -303,205 +313,102 @@ Shows:
 Aggregated analytics across all saved traces in your project.
 
 ```bash
-agent-trace stats              # all time
-agent-trace stats --today      # today only
-agent-trace stats --week       # last 7 days
-agent-trace stats --script my_agent.py  # filter by script
-agent-trace stats --model gpt-4o       # filter by model
+costcatch stats                        # all time
+costcatch stats --today
+costcatch stats --week
+costcatch stats --script my_agent.py
+costcatch stats --model gpt-4o
 ```
-
-Shows total runs, total cost, average cost per run, most expensive models, most used tools, and cost trend.
 
 ---
 
 ### `watch`
 
-A traced run that always saves. Same as `run --save` with the live view guaranteed on.
+A traced run that always saves. Same as `run --save`.
 
 ```bash
-agent-trace watch python my_agent.py
+costcatch watch python my_agent.py
 ```
 
 ---
 
 ### `init`
 
-Set up `agent-trace` in your project:
-
 ```bash
-agent-trace init
+costcatch init             # create .costcatch/, fetch latest pricing
+costcatch init --offline   # skip the download, use bundled prices
 ```
-
-This:
-
-1. Creates `.agent-traces/` for saved traces
-2. Adds `.agent-traces/` to `.gitignore`
-3. Fetches the latest model pricing database (300+ models from LiteLLM)
 
 ---
 
 ## Features
 
-### Live Terminal Dashboard
+### Live terminal dashboard
 
-While your program runs, `agent-trace` renders a live, in-place dashboard at ~12 FPS:
+Renders in place at ~12 FPS: in-flight calls with spinner and ticking timer,
+completed calls with status badge, tokens and cost, tool calls inline under the
+step that triggered them, and a running totals footer. Your program's output
+scrolls above the box, untouched.
 
-- **In-flight calls**: braille spinner + ticking timer + model name
-- **Completed calls**: status badge (✓/✗) + model + duration + tokens → tokens + cost
-- **Tool calls**: rendered inline under the LLM step that triggered them
-- **Summary footer**: total calls, total tokens, total cost, cost projection
-- **Matrix banner**: animated dot-matrix reveal header (pure aesthetic, zero performance impact)
-- **Your program's output**: scrolls above the box, untouched
+### Warning engine
 
-The live region uses cursor control for flicker-free redraws. On exit, it collapses into a clean, static trace.
-
----
-
-### Content Inspection (`show` / `--inspect`)
-
-Every captured LLM call stores the actual conversation content:
-
-- **System prompt** (with delta detection — only stored when it changes between calls)
-- **Input messages** (user, assistant, tool results)
-- **Model output** (text, tool calls)
-- **Error details** (HTTP status, provider error type and message)
-- **Retry markers** (which earlier step this call retried)
-
-All content is automatically **redacted** and **truncated** before storage (see [Redaction](#automatic-secret--pii-redaction)).
-
-```bash
-# After a run:
-agent-trace python my_agent.py --save --inspect
-
-# Or later:
-agent-trace show trace.json --step 3
-agent-trace show trace.json --grep "hallucination"
-```
-
----
-
-### Auto-Diff for Prompt Iteration (`--compare-last`)
-
-Prompt iteration is the #1 agent-dev activity. `--compare-last` makes it one flag instead of juggling two files:
-
-```bash
-# First run:
-agent-trace python my_agent.py --save
-
-# Edit the prompt, re-run:
-agent-trace python my_agent.py --save --compare-last
-```
-
-**Semantic step-matching:** Steps are matched by a fingerprint of `(model + sorted tool call names)`, not by index position. This means an inserted or removed step won't cascade spurious diffs on every subsequent line.
-
----
-
-### CI Assertion Gates
-
-Turn `agent-trace` into a regression gate in your CI pipeline:
-
-```bash
-# In your CI script / GitHub Action:
-agent-trace python tests/agent_test.py --max-cost 0.10 --max-calls 8
-```
-
-- `--max-cost <usd>`: exit code 1 if total cost exceeds the threshold
-- `--max-calls <n>`: exit code 1 if LLM call count exceeds the threshold
-
-This is a snapshot test for agent behavior — it catches regressions where a prompt change causes the agent to loop, use more calls, or pick a more expensive model. It's the one feature that gets the tool used by a whole team instead of just the person who installed it.
-
-**JSON output for CI parsing:**
-
-```bash
-agent-trace python tests/agent_test.py --json | jq '.summary'
-# { "llmCalls": 4, "toolCalls": 2, "totalInputTokens": 8291, ... }
-```
-
----
-
-### Warning Engine
-
-From the raw traffic alone, `agent-trace` reconstructs your agent's behavior and automatically flags problems:
+From the raw traffic alone, costcatch reconstructs behavior and flags problems:
 
 | Warning | Severity | What it detects |
 |---------|----------|-----------------|
-| **HTTP errors** | 🔴 Critical | 429 rate limits, 500 server errors, 401 auth failures |
+| **HTTP errors** | 🔴 Critical | 429 rate limits, 500s, 401 auth failures |
 | **Silent retries** | 🟡 Warn | Same prompt re-sent after a failure (SDK auto-retry) |
-| **Context bloat** | 🟡 Warn / 🔴 Critical | Input tokens growing >3× across calls (the #1 cost driver) |
-| **Context spike** | 🟡 Warn | Input tokens growing >4× between two adjacent steps |
-| **Duplicate tool calls** | 🟡 Warn / ℹ️ Info | Near-identical function calls across steps (>80% arg similarity) |
+| **Context bloat** | 🟡 / 🔴 | Input tokens growing >3× across calls — the #1 cost driver |
+| **Context spike** | 🟡 Warn | Input tokens growing >4× between adjacent steps |
+| **Duplicate tool calls** | 🟡 / ℹ️ | Identical or >80%-similar calls to the same tool |
 | **Cost concentration** | 🟡 Warn | A single step consuming >50% of total cost |
 | **Latency spikes** | ℹ️ Info | Steps exceeding `--threshold` (default 10s) |
 
-Warnings appear in the trace footer, sorted by severity (critical first).
-
----
-
-### Error & Retry Surfacing
-
-Failed LLM calls and silent retries are surfaced as first-class elements in the trace:
-
-- **Red ✗ badge** on error steps (vs green ✓ on success)
-- **HTTP status code** + provider error type (`rate_limit_error`, `overloaded_error`, etc.)
-- **Error message** extracted from the response body (OpenAI, Anthropic, and generic shapes)
-- **Retry markers** (`→→ retry of step 3`) when a later call re-sends the same prompt
-
-No more staring at logs wondering why your agent made 12 calls when it should have made 4.
-
----
-
-### Automatic Secret & PII Redaction
-
-All captured content is scrubbed before storage or display. Two tiers, both on by default:
-
-**Tier 1 — Secrets (always redacted):**
-
-| Pattern | Provider |
-|---------|----------|
-| `sk-proj-*`, `sk-*` | OpenAI |
-| `sk-ant-api03-*` | Anthropic |
-| `AIzaSy*` | Google |
-| `AKIA*` | AWS |
-| `gsk_*` | Groq |
-| `r8_*` | Replicate |
-| `ghp_*` | GitHub |
-| `xoxb-*`, `xoxp-*` | Slack |
-| `Bearer <token>` | Any Authorization header |
-| `api_key: <value>` | Labeled key-value pairs |
-
-**Tier 2 — PII (on by default, opt-out with `--no-redact`):**
-
-- Email addresses → `«email»`
-- Phone numbers with separators → `«phone»` (won't false-positive on token counts)
-- Luhn-valid credit card numbers → `«card»` (won't false-positive on random digit sequences)
-
-> **Note:** Request headers (where API keys normally live) are **never captured** in the first place. This redaction layer only guards secrets a user pasted INTO a prompt or that a tool result echoed back.
-
----
-
-### Cost Tracking
-
-Every LLM call is priced using a bundled, offline pricing database:
-
-- **300+ models** from OpenAI, Anthropic, Google, Groq, Mistral, Cohere, Ollama, and more
-- **Token counts come straight from the API response** — never estimated or guessed
-- **Per-step cost**: shown inline next to each call in the trace
-- **Total cost**: shown in the header and summary
-- **Cost projection**: "at 100 runs/day = $X/mo" to contextualize one-off costs
-- **Refreshable**: `agent-trace init` fetches the latest pricing from LiteLLM's database
-- **Graceful fallback**: if a model isn't in the database, tokens still show and cost shows `$?.??`
-
----
-
-### Aggregated Analytics
-
-The `stats` command aggregates across all saved traces:
+### CI assertion gates
 
 ```bash
-agent-trace stats --week
+costcatch python tests/agent_test.py --max-cost 0.10 --max-calls 8
+costcatch python tests/agent_test.py --json | jq '.summary'
 ```
 
-Shows: total runs, total cost, average cost per run, most expensive models, most-used tools, and temporal trends. Filter by `--today`, `--week`, `--script`, or `--model`.
+A snapshot test for agent *behavior* — it catches the regression where a prompt
+change makes the agent loop, use more calls, or pick a pricier model.
+
+### Mid-run budget guard
+
+```bash
+costcatch python my_agent.py --budget 1.00
+```
+
+Unlike `--max-cost` (which reports after the fact), `--budget` watches spend as
+calls land and terminates the program once it passes the limit — SIGTERM first,
+SIGKILL after a grace period.
+
+### Automatic redaction
+
+Everything captured is scrubbed before it is stored or printed:
+
+**Terminal escapes** are always stripped. Model output is attacker-influenceable
+and gets printed to your terminal; raw ANSI could otherwise clear your screen or
+overwrite lines to forge output.
+
+**Secrets** are always redacted: OpenAI (`sk-*`), Anthropic (`sk-ant-*`), Google
+(`AIza*`), AWS (`AKIA*`/`ASIA*`), Groq, Replicate, GitHub, Slack, Hugging Face,
+OpenRouter, JWTs, `Bearer` tokens, and labeled `api_key: value` pairs.
+
+**PII** is redacted by default and opt-out with `--no-redact`: emails,
+separator-formatted phone numbers, and Luhn-valid card numbers.
+
+> Redaction is **best-effort**, not a guarantee. Review a trace before sharing
+> it publicly. Request headers — where API keys actually live — are never
+> captured in the first place.
+
+### Cost tracking
+
+- Token counts come **straight from the API response** — never estimated
+- ~30 models priced offline out of the box; `costcatch init` pulls 1,000+ from LiteLLM
+- **A wrong price is worse than no price**: if costcatch can't confidently
+  resolve a model, it shows `$?.??` rather than guessing a sibling model's rate
 
 ---
 
@@ -509,49 +416,98 @@ Shows: total runs, total cost, average cost per run, most expensive models, most
 
 | Provider | Detection | Notes |
 |----------|-----------|-------|
-| **OpenAI** | `api.openai.com` | Full support including streaming, tools, vision |
+| **OpenAI** | `api.openai.com` | Streaming, tools, vision |
 | **Azure OpenAI** | `*.openai.azure.com` | Same parser as OpenAI |
-| **Anthropic** | `api.anthropic.com` | System prompts, content blocks, tool_use, cache metrics |
-| **Google Gemini** | `generativelanguage.googleapis.com` | contents/candidates schema |
-| **OpenRouter** | `openrouter.ai` | OpenAI-compatible, with provider pass-through |
+| **Anthropic** | `api.anthropic.com` | System prompts, content blocks, `tool_use`, cache metrics |
+| **Google Gemini** | `generativelanguage.googleapis.com`, `aiplatform.googleapis.com` | Model read from the URL path |
+| **OpenRouter** | `openrouter.ai` | OpenAI-compatible |
 | **Groq** | `api.groq.com` | OpenAI-compatible |
 | **Mistral** | `api.mistral.ai` | OpenAI-compatible |
-| **Ollama** | `localhost:11434` | OpenAI-compatible local models |
-| **Cohere** | `api.cohere.ai` | Native parser for chat/generate |
-| **Generic** | Any URL with `/chat/completions` | Catches any OpenAI-compatible endpoint |
+| **Ollama** | `:11434` | Local models |
+| **Cohere** | `api.cohere.com`, `api.cohere.ai` | Native chat/generate parser |
+| **Generic** | Any URL with `/chat/completions` | Catches vLLM, Together, Fireworks, LiteLLM proxies, … |
+
+Missing one? [Open a provider request](https://github.com/costcatch/costcatch/issues/new?template=provider_request.yml).
 
 ---
 
 ## Streaming & Token Accuracy
 
-| Provider | Streaming Support | Token Accuracy |
-|----------|-------------------|----------------|
+| Provider | Streaming | Token accuracy |
+|----------|-----------|----------------|
 | **Anthropic** | ✅ Streams always include usage | Exact |
 | **OpenAI** | ⚠️ Requires `stream_options: { include_usage: true }` | Exact when enabled |
-| **Others** | ✅ Best-effort SSE chunk reassembly | Exact when usage is present |
+| **Others** | ✅ Best-effort SSE reassembly | Exact when usage is present |
 
-If OpenAI streaming usage is missing, the call is still captured (model, timing, tool calls) and `agent-trace` prints a tip explaining how to enable it. Token counts are **never estimated or fabricated**.
+If OpenAI streaming usage is missing, the call is still captured (model, timing,
+tool calls) and costcatch prints a tip explaining how to enable it. **Traced
+token counts are never estimated or fabricated** — a call with no usage data
+shows `tokens ?`, not a guess.
+
+(The separate `estimate` command *is* an estimate, and labels itself as one.)
+
+---
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success — and the traced program exited 0 |
+| `1` | A `--max-cost` / `--max-calls` / `--budget` gate failed |
+| `2` | Bad invocation: unknown runtime, missing arguments, unreadable input |
+| `70` | costcatch itself failed (missing interceptor, unwritable temp dir) |
+| `127` | The traced program could not be started |
+| *other* | The traced program's own exit code, passed through (128+N for signals) |
+
+---
+
+## Environment Variables
+
+| Variable | Effect |
+|----------|--------|
+| `NO_COLOR` | Disable all color (standard) |
+| `COSTCATCH_DEBUG=1` | Print stack traces for internal errors |
+| `COSTCATCH_VERSION` | Override the reported version |
+| `COSTCATCH_MAX_BODY_BYTES` | Per-response capture ceiling (default 2 MiB) |
+| `COSTCATCH_MAX_TRACE_BYTES` | Per-run capture ceiling (default 64 MiB) |
 
 ---
 
 ## Honest Limitations
 
-We believe in honesty about what a tool can and can't do:
+### What costcatch can NOT see
 
-### What agent-trace can NOT see
+Because tracing happens at the HTTP layer, not inside your code:
 
-Because tracing happens at the HTTP layer (not inside your code):
+- **Local tool execution** (a Python function your agent calls) makes no HTTP
+  request, so it isn't its own step. You see it as the `tool_use` block the model
+  requested and as context growth on the next call.
+- **Concurrent calls** are captured and grouped, but HTTP alone can't attribute
+  them to named graph nodes.
+- **gRPC transports** (some Google Cloud paths) bypass HTTP interception.
+- **`bun` and `deno`** are not supported: neither honours `--require`, so
+  costcatch reports "could not detect runtime" rather than producing an empty
+  trace that looks like a working one.
+- **aiohttp** is not yet patched on the Python side; `httpx` and `urllib3`
+  (which covers `requests`) are.
 
-- **Local tool execution** (a Python function your agent calls) makes no HTTP request, so it doesn't appear as its own step. You see it as the `tool_use` block the model requested and the context growth on the next call.
-- **Concurrent calls** (e.g. parallel LangGraph nodes) are captured and grouped, but HTTP alone can't attribute them to named graph nodes.
-- **gRPC transports** (used by some Google Cloud services) bypass HTTP interception and are invisible.
-- **In-process SDKs** that skip HTTP entirely (rare, but possible) won't be captured.
+### Other things worth knowing
 
-### What agent-trace IS
+- **Cached-token pricing is not modelled.** Cached input tokens are captured and
+  displayed, but priced at the normal input rate, so a run using prompt caching
+  is reported as *more* expensive than it actually was.
+- **Content storage is bounded, not deduplicated.** Chat APIs resend the whole
+  history each turn, so a very long run hits an 8 M-character content budget;
+  past that, steps keep every metric but stop storing conversation text and are
+  marked `truncated`.
+- **`estimate` is a heuristic.** Character-ratio based, ±10–15% for English
+  prose, wider for code and CJK. It reports its own confidence and margin.
 
-- A **developer tool**, not a production monitoring system. It's for your terminal, not your dashboard.
-- A **single-machine tool**. It sees traffic from the process you spawn, not from a distributed system.
-- A **best-effort tool**. If interception fails, your program runs correctly — the trace just has gaps.
+### What costcatch IS
+
+A **developer tool**, not a production monitoring system. **Single-machine** —
+it sees the process tree it spawns. **Best-effort** — if interception fails,
+your program still runs correctly; the trace just has gaps.
 
 ---
 
@@ -559,100 +515,64 @@ Because tracing happens at the HTTP layer (not inside your code):
 
 ```
 src/
-├── index.ts               CLI entry point (Commander.js)
-├── cli/                   Command handlers (run, show, replay, diff, stats, watch, init)
+├── index.ts               CLI entry: argv splitting, commander wiring, exit codes
+├── cli/                   One file per command; each returns an exit code
 ├── core/
-│   ├── tracer.ts           Spawns child process with interceptor injected
-│   ├── trace-builder.ts    Raw HTTP calls → structured Trace object
-│   ├── content-extractor.ts  Extracts conversation from request/response bodies
-│   ├── redact.ts           Secret + PII scrubbing
-│   ├── cost-calculator.ts  USD cost from token counts + pricing DB
-│   ├── warning-engine.ts   Detects context bloat, errors, retries, duplicates
+│   ├── constants.ts        Cross-process contract with the interceptors
+│   ├── tracer.ts           Spawns the child with the interceptor injected
+│   ├── trace-builder.ts    Raw HTTP calls → structured Trace
+│   ├── content-extractor.ts  Conversation extraction from request/response
+│   ├── redact.ts           Control-char scrubbing + secret/PII redaction
+│   ├── cost-calculator.ts  USD from tokens + pricing DB
+│   ├── warning-engine.ts   Context bloat, errors, retries, duplicates
 │   ├── diff-engine.ts      Two-trace comparison
-│   ├── compare-last.ts     Semantic step-matching for auto-diff
-│   ├── ndjson-tail.ts      Incremental NDJSON reader (for live streaming)
-│   └── runtime-detect.ts   Python/Node.js detection
+│   ├── ndjson-tail.ts      Incremental reader for the live view
+│   ├── runtime-detect.ts   Runtime classification + argv splitting
+│   └── version.ts          Single-sourced version
 ├── interceptors/
-│   ├── node/               Node.js HTTP/fetch interceptor
-│   └── python/             Python httpx/urllib3 interceptor (sitecustomize.py)
-├── providers/
-│   ├── registry.ts         URL → provider detection
-│   ├── openai.ts           OpenAI request/response parser
-│   ├── anthropic.ts        Anthropic request/response parser
-│   ├── google.ts           Google Gemini parser
-│   ├── cohere.ts           Cohere parser
-│   ├── ollama.ts           Ollama parser
-│   └── ...                 (groq, mistral, openrouter, generic)
-├── renderers/
-│   ├── tree.ts             Final static trace (the box)
-│   ├── show.ts             Full conversation view
-│   ├── live-tree.ts        Live animated dashboard
-│   ├── diff.ts             Side-by-side trace comparison
-│   ├── stats.ts            Aggregated analytics
-│   └── json.ts             JSON output
-├── pricing/
-│   ├── pricing-db.ts       Pricing database (300+ models)
-│   ├── fallback-prices.json  Bundled offline prices
-│   └── fetch-prices.ts     LiteLLM price fetcher
-├── storage/
-│   ├── save.ts             Trace persistence
-│   ├── load.ts             Trace loading + listing
-│   └── index.ts            Directory management
-├── types/
-│   ├── trace.ts            Core data types (Trace, Step, LLMStep, StepContent, etc.)
-│   └── config.ts           CLI configuration types
-└── ui/
-    ├── theme.ts            Color palette, glyphs, layout helpers
-    ├── matrix-banner.ts    Animated header banner
-    ├── live-controller.ts  Orchestrates the live TUI render loop
-    └── live-region.ts      Terminal region management (cursor control)
+│   ├── node/preload.cjs           Injected via --require
+│   └── python/sitecustomize.py    Injected via PYTHONPATH
+├── providers/             URL → parser (openai, anthropic, google, … , generic)
+├── pricing/               Model → price resolution + bundled snapshot
+├── renderers/             Pure state → string. No I/O.
+├── storage/               Atomic saves, validated loads
+├── types/                 Trace and config types
+└── ui/                    Theme, live region, live controller
 ```
+
+Dependencies point inward: `cli → core/renderers/storage → types`.
 
 ---
 
 ## Development
 
 ```bash
-# Install dependencies
-npm install
+npm ci
+python -m pip install httpx requests   # for the Python integration tests
 
-# Build (tsup → dist/)
-npm run build
-
-# Watch mode (rebuild on changes)
-npm run dev
-
-# Type check (no emit)
-npm run lint
-
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
+npm run typecheck   # tsc --noEmit
+npm test            # vitest run
+npm run build       # tsup → dist/
+npm run verify      # all three, as CI runs them
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the rules that matter when touching
+the interceptors or the pricing resolver.
+
+### Testing
+
+293 tests across 25 files. Unit tests cover redaction (including ReDoS
+resistance), content extraction, the warning engine, pricing resolution, argv
+splitting, storage, and every provider parser. Integration tests spawn real
+`node` and `python` processes against a local mock server and assert both that
+calls are captured *and* that the traced program's own behavior is unchanged.
 
 ---
 
-## Testing
+## Security
 
-**131 tests across 13 test files**, covering:
-
-| Area | Tests | Coverage |
-|------|-------|----------|
-| **Redaction** | 28 | All 8 provider key formats, adversarial nesting, PII, Luhn, edge cases |
-| **Content extraction** | 14 | OpenAI, Anthropic, Gemini, multimodal, errors, truncation, redaction-within-content |
-| **Warning engine** | 15 | Context growth, duplicates, cost concentration, HTTP errors, retries, severity sorting |
-| **Cost calculator** | 11 | Known models, unknown models, null tokens, formatting |
-| **Providers** | 24 | URL detection, request/response parsing for OpenAI + Anthropic + registry |
-| **NDJSON tail** | 4 | Missing files, partial lines, malformed JSON, offset advancing |
-| **Compare/Show** | 9 | Semantic step-matching, backward compatibility, grep, retry markers |
-| **Trace builder** | 6 | Content capture, error detection, retry marking, opt-out |
-| **Integration** | 4 | End-to-end Node.js + Python interception with real HTTP servers |
-
-```bash
-npm test
-```
+See [SECURITY.md](SECURITY.md) for the threat model, what data is captured and
+where it lives, and how to report a vulnerability privately.
 
 ---
 

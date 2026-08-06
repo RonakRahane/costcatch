@@ -22,8 +22,8 @@ import {
   frameTop,
   frameBottom,
   frameLine,
+  wordmark,
 } from "../ui/theme.js";
-import { wordmark } from "../ui/matrix-banner.js";
 
 function fmtDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
@@ -77,7 +77,8 @@ export function renderTree(trace: Trace, showCost: boolean = true, useColor: boo
   if (s.totalInputTokens > 0 || s.totalOutputTokens > 0) {
     let tokLine =
       `${c("token", compact(s.totalInputTokens))} ${faint(glyph.arrow)} ${c("token", compact(s.totalOutputTokens))} ${dim("tok")}`;
-    if (showCost && trace.totalCostUsd !== null) {
+    if (showCost && trace.totalCostUsd !== null && trace.totalCostUsd > 0) {
+      tokLine += dim("  ·  ") + dim(formatProjection(trace.totalCostUsd, 1).replace("/month", "/mo"));
       tokLine += dim("  ·  ") + dim(formatProjection(trace.totalCostUsd, 100).replace("/month", "/mo"));
     }
     lines.push(frameLine(tokLine, width));

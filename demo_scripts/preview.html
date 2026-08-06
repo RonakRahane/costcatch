@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>costcatch ⚡ - Agent Trace & Cost Tracker Showcase</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #3b82f6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --purple: #8b5cf6;
+      --cyan: #06b6d4;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+    }
+    .header {
+      text-align: center;
+      max-width: 800px;
+    }
+    .header h1 {
+      font-size: 32px;
+      margin: 0 0 10px 0;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header p {
+      color: var(--muted);
+      font-size: 16px;
+      margin: 0;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .terminal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 900px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+    .terminal-header {
+      background: #1f2937;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .dots {
+      display: flex;
+      gap: 8px;
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .dot.red { background: #ef4444; }
+    .dot.yellow { background: #f59e0b; }
+    .dot.green { background: #10b981; }
+    .terminal-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .terminal-body {
+      padding: 20px;
+      font-family: 'JetBrains Mono', 'Fira Code', Menlo, Monaco, Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+    .green-text { color: var(--green); }
+    .amber-text { color: var(--amber); }
+    .cyan-text { color: var(--cyan); }
+    .purple-text { color: var(--purple); }
+    .muted-text { color: var(--muted); }
+    .red-text { color: var(--red); }
+    .bold { font-weight: bold; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 100%;
+      max-width: 900px;
+    }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="badge">costcatch ⚡ v0.1.0</div>
+    <h1>Zero-Instrumentation LLM Agent Tracer & Cost Tracker</h1>
+    <p>Live terminal execution outputs, prompt cost estimation, trace diffing, and aggregated analytics.</p>
+  </div>
+
+  <!-- Terminal Card 1: Live Trace Dashboard -->
+  <div class="terminal-card">
+    <div class="terminal-header">
+      <div class="dots">
+        <div class="dot red"></div>
+        <div class="dot yellow"></div>
+        <div class="dot green"></div>
+      </div>
+      <div class="terminal-title">1. Live Agent Tracing & Warning Engine ($ costcatch node demo_agent.mjs)</div>
+      <div></div>
+    </div>
+    <div class="terminal-body"><span class="muted-text">$ costcatch --save node demo_scripts/demo_agent.mjs</span>
+[Agent Startup] Starting Financial Analysis Agent...
+[Agent Log] Step 1: Querying LLM with initial prompt...
+[Agent Log] Tool call received: web_search
+[Agent Log] Step 2: Executing tool and providing context back to LLM...
+[Agent Log] Step 2 Result: According to recent reports, Tesla Q4 2024 revenue reached $25.17 billion.
+[Agent Log] Step 3: Final report generation...
+[Agent Log] Final Output: Summary complete. Total revenue analyzed.
+
+<span class="cyan-text bold">costcatch — 26ms · $0.04</span>
+
+  <span class="green-text">✓ ① LLM</span>  <span class="bold">gpt-4o</span>                 20ms  1,203 → 87 tok   <span class="green-text">$0.004</span>
+       <span class="purple-text">└─ ⚡ web_search("Tesla Q4 2024 financial revenue")</span>
+  <span class="green-text">✓ ② LLM</span>  <span class="bold">gpt-4o</span>                  4ms  5,891 → 92 tok   <span class="amber-text">$0.016</span>
+  <span class="green-text">✓ ③ LLM</span>  <span class="bold">gpt-4o</span>                  2ms  6,100 → 45 tok   <span class="amber-text">$0.016</span>
+
+  <span class="bold">3 LLM calls · 1 tool calls · 26ms · $0.04</span>
+  <span class="amber-text">warnings:</span>
+    <span class="amber-text">⚠ [warn] Context grew 5.1× across calls (1,203 → 6,100 tokens)</span>
+    <span class="amber-text">⚠ [warn] Context grew 4.9× between steps 1 and 2 (1,203 → 5,891)</span>
+
+  <span class="green-text">✓ Trace saved: .costcatch/2026-07-28T07-09-04-demo_agent.json</span></div>
+  </div>
+
+  <div class="grid">
+    <!-- Terminal Card 2: Estimate -->
+    <div class="terminal-card">
+      <div class="terminal-header">
+        <div class="dots">
+          <div class="dot red"></div>
+          <div class="dot yellow"></div>
+          <div class="dot green"></div>
+        </div>
+        <div class="terminal-title">2. Multi-Model Token Estimator</div>
+      </div>
+      <div class="terminal-body"><span class="muted-text">$ costcatch estimate --text "Prompt..." --model gpt-4o,claude-sonnet-4</span>
+
+<span class="cyan-text bold">⚡ costcatch estimate  2 models</span>
+
+  <span class="bold">● Model Comparison</span>
+  ┌─────────────────┬────────┬─────────┐
+  │ Model           │ Tokens │    Cost │
+  ├─────────────────┼────────┼─────────┤
+  │ gpt-4o          │    ~17 │ $0.0000 │
+  │ claude-sonnet-4 │    ~19 │ $0.0001 │
+  └─────────────────┴────────┴─────────┘
+
+  <span class="green-text">✦ Estimation uses character-ratio heuristics.</span></div>
+    </div>
+
+    <!-- Terminal Card 3: Diff -->
+    <div class="terminal-card">
+      <div class="terminal-header">
+        <div class="dots">
+          <div class="dot red"></div>
+          <div class="dot yellow"></div>
+          <div class="dot green"></div>
+        </div>
+        <div class="terminal-title">3. Trace Comparison & Diff Engine</div>
+      </div>
+      <div class="terminal-body"><span class="muted-text">$ costcatch diff before.json after.json</span>
+
+  <span class="cyan-text bold">diff: before vs after</span>
+
+  Steps                 1 → 3                <span class="red-text">+2</span>
+  LLM calls             1 → 3                <span class="red-text">+2</span>
+  Tool calls            1 → 1                 0
+  Cost             $0.004 → $0.04         <span class="red-text">+808%</span>
+  Max context       1,203 → 6,100        <span class="red-text">+4,897</span></div>
+    </div>
+  </div>
+
+  <!-- Terminal Card 4: Stats -->
+  <div class="terminal-card">
+    <div class="terminal-header">
+      <div class="dots">
+        <div class="dot red"></div>
+        <div class="dot yellow"></div>
+        <div class="dot green"></div>
+      </div>
+      <div class="terminal-title">4. Aggregated Analytics ($ costcatch stats)</div>
+    </div>
+    <div class="terminal-body"><span class="muted-text">$ costcatch stats</span>
+
+  <span class="purple-text bold">📊 costcatch stats (all time)</span>
+  ──────────────────────────────────────────────────
+  <span class="bold">Total runs:</span>      3
+  <span class="bold">Total cost:</span>      <span class="green-text">$0.07</span>
+  <span class="bold">Avg cost/run:</span>    $0.02
+
+  <span class="bold">Most expensive scripts:</span>
+       $0.07  demo_scripts/demo_agent.mjs  (2 runs)
+      $0.004  demo_scripts/demo_agent_v2.mjs  (1 runs)
+
+  <span class="bold">Most expensive models:</span>
+       $0.07  gpt-4o  (7 calls)</div>
+  </div>
+
+</body>
+</html>

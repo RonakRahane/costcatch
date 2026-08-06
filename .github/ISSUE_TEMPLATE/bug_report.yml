@@ -1,0 +1,64 @@
+name: Bug report
+description: Something costcatch did wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not paste a saved trace without reading it first — redaction is
+        best-effort and traces contain your prompts.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: The exact command you ran, and a minimal script if you can share one.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: costcatch version
+      description: Output of `costcatch --version`
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node version (`node -v`), and Python version if tracing Python.
+      placeholder: "macOS 15.3 · Node 22.11 · Python 3.12"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Traced runtime
+      options: [Python, Node.js, Both, Not applicable]
+    validations:
+      required: true
+
+  - type: input
+    id: sdk
+    attributes:
+      label: LLM SDK and version
+      placeholder: "openai 1.60.0 / anthropic 0.45.0 / langchain 0.3.x"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output
+      description: Re-run with COSTCATCH_DEBUG=1 for a stack trace on internal errors.
+      render: shell

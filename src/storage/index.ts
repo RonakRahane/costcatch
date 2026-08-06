@@ -6,9 +6,9 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { TRACES_DIR } from "../core/constants.js";
 
-/** Default traces directory name. */
-export const TRACES_DIR = ".costcatch";
+export { TRACES_DIR };
 
 /**
  * Initialize the traces directory in the given project root.

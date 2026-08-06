@@ -1,99 +1,65 @@
 /**
- * CostCatch banner — ASCII art wordmark and init splash.
+ * CostCatch splash — the two-panel banner shown by `costcatch init`.
  *
- * The splash renders a two-panel Feynman-style layout:
- *   ┌─────────────────────────────────────────────────────────────────────────┐
- *   │                        costcatch                                       │
- *   │                          v0.1.0                                        │
- *   ├────────────────────────────┬────────────────────────────────────────────┤
- *   │ About                     │ Commands                                  │
- *   │  ...                      │  run     trace an agent script            │
- *   │                           │  ...                                      │
+ *   ┌────────────────────────────┬────────────────────────────────────────────┐
+ *   │ About                      │ Commands                                   │
+ *   │  ...                       │  run     trace an agent script             │
  *   └────────────────────────────┴────────────────────────────────────────────┘
+ *
+ * `cfonts` (the big ASCII wordmark) is imported DYNAMICALLY. It ships ~1 MB of
+ * font tables, and `init` is the only command that renders it — a static import
+ * here would pay that parse cost on every `costcatch run`, which is the one
+ * command whose startup latency users actually feel.
+ *
+ * The header wordmark helpers (`wordmark`, `matrixReveal`) live in ui/theme.ts
+ * for the same reason: renderers need them, but must not need cfonts.
  */
 
 import chalk from "chalk";
-import CFonts from "cfonts";
-import { palette, glyph, dim } from "./theme.js";
+import { palette, glyph, dim, visibleLength } from "./theme.js";
+import { getVersion } from "../core/version.js";
 
-/** Glyphs the "un-settled" columns cycle through before landing. */
-const MATRIX_GLYPHS = "▁▂▃▄▅▆▇█░▒▓╌╍┄┅";
-
-/**
- * Deterministic pseudo-random in [0,1) from two integers.
- */
-function rand(a: number, b: number): number {
-  const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
-  return x - Math.floor(x);
-}
-
-/**
- * Reveal `target` left-to-right with a dot-matrix shimmer.
- */
-export function matrixReveal(target: string, tick: number, revealTicks: number = 14): string {
-  if (tick >= revealTicks) return chalk.white.bold(target);
-
-  let out = "";
-  for (let i = 0; i < target.length; i++) {
-    const ch = target[i];
-    if (ch === " ") {
-      out += " ";
-      continue;
-    }
-    const threshold = (i / target.length) * revealTicks;
-    if (tick >= threshold) {
-      out += chalk.white(ch);
-    } else {
-      const g = MATRIX_GLYPHS[Math.floor(rand(i, tick) * MATRIX_GLYPHS.length)];
-      const near = tick / Math.max(threshold, 1);
-      out += chalk.hex(near > 0.6 ? "#aaaaaa" : palette.faint)(g);
-    }
+/** Render the big ASCII wordmark, degrading to plain text if cfonts fails. */
+async function renderWordmarkArt(): Promise<void> {
+  try {
+    const { default: CFonts } = await import("cfonts");
+    CFonts.say("cost|catch", {
+      font: "tiny",
+      align: "left",
+      colors: ["white"],
+      background: "transparent",
+      space: false,
+      letterSpacing: 1,
+    });
+  } catch {
+    // Missing optional font data or a non-TTY that cfonts dislikes — the splash
+    // is decoration, so fall back rather than failing `init`.
+    console.log(chalk.white.bold("\n  costcatch"));
   }
-  return out;
-}
-
-/** The static one-line wordmark used in headers. */
-export function wordmark(): string {
-  return chalk.white.bold("costcatch");
 }
 
 /**
- * The full splash — Feynman-style two-column panel.
- *
- * Shows the big ASCII wordmark, version, then a split box with
- * tool info on the left and command reference on the right.
+ * The full splash — ASCII wordmark, version, then a split info/commands panel.
  */
-export function renderSplash(): void {
-  // ── Big ASCII wordmark ──
-  CFonts.say("cost|catch", {
-    font: "tiny",
-    align: "left",
-    colors: ["white"],
-    background: "transparent",
-    space: false,
-    letterSpacing: 1,
-  });
+export async function renderSplash(): Promise<void> {
+  await renderWordmarkArt();
 
-  const version = process.env.COSTCATCH_VERSION ?? "0.1.0";
   const width = Math.min(process.stdout.columns || 88, 88);
   const f = chalk.hex(palette.faint);
 
-  // Version line
-  const versionText = dim(`v${version}`);
-  const vPad = Math.max(0, Math.floor(width / 2) - 3);
-  console.log(" ".repeat(vPad) + versionText);
+  const versionText = dim(`v${getVersion()}`);
+  console.log(" ".repeat(Math.max(0, Math.floor(width / 2) - 3)) + versionText);
   console.log();
 
-  // ── Two-column split box ──
+  // Two-column split box. `leftWidth` is fixed; the right column absorbs the
+  // remaining terminal width, with a floor so a narrow terminal still renders.
   const leftWidth = 30;
-  const rightWidth = width - leftWidth - 5; // 5 = │ borders + padding
+  const rightWidth = Math.max(24, width - leftWidth - 5); // 5 = borders + padding
 
-  // Top border
   console.log(
     f(glyph.tl) + f(glyph.h.repeat(leftWidth + 2)) + f(glyph.tj) + f(glyph.h.repeat(rightWidth + 2)) + f(glyph.tr),
   );
 
-  // Left column content
   const leftLines = [
     "",
     chalk.white.bold("About"),
@@ -111,7 +77,6 @@ export function renderSplash(): void {
     "",
   ];
 
-  // Right column content
   const rightLines = [
     "",
     chalk.white.bold("Commands"),
@@ -130,42 +95,28 @@ export function renderSplash(): void {
     "",
   ];
 
-  // Normalize to same height
   const maxLines = Math.max(leftLines.length, rightLines.length);
   while (leftLines.length < maxLines) leftLines.push("");
   while (rightLines.length < maxLines) rightLines.push("");
 
-  // Render rows
   for (let i = 0; i < maxLines; i++) {
-    const left = leftLines[i];
-    const right = rightLines[i];
-    const leftVis = left ? stringWidthLocal(left) : 0;
-    const rightVis = right ? stringWidthLocal(right) : 0;
-    const leftPad = Math.max(0, leftWidth - leftVis);
-    const rightPad = Math.max(0, rightWidth - rightVis);
+    const left = leftLines[i] || "";
+    const right = rightLines[i] || "";
+    // `visibleLength` is ANSI-aware AND wide-glyph aware; the old local helper
+    // only stripped SGR codes and counted code units, so the box drifted on any
+    // line containing a wide character.
+    const leftPad = Math.max(0, leftWidth - visibleLength(left));
+    const rightPad = Math.max(0, rightWidth - visibleLength(right));
 
     console.log(
-      f(glyph.v) + " " + (left || "") + " ".repeat(leftPad) + " " +
-      f(glyph.v) + " " + (right || "") + " ".repeat(rightPad) + " " +
-      f(glyph.v),
+      f(glyph.v) + " " + left + " ".repeat(leftPad) + " " +
+        f(glyph.v) + " " + right + " ".repeat(rightPad) + " " +
+        f(glyph.v),
     );
   }
 
-  // Bottom border
   console.log(
     f(glyph.bl) + f(glyph.h.repeat(leftWidth + 2)) + f(glyph.bj) + f(glyph.h.repeat(rightWidth + 2)) + f(glyph.br),
   );
-
   console.log();
-}
-
-/**
- * Local string-width helper to avoid importing from theme
- * (prevents circular dependency issues).
- */
-function stringWidthLocal(s: string): number {
-  // Strip ANSI escape codes and count visible characters
-  // eslint-disable-next-line no-control-regex
-  const stripped = s.replace(/\x1b\[[0-9;]*m/g, "");
-  return stripped.length;
 }
