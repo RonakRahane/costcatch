@@ -37,6 +37,21 @@ export const openrouterProvider: Provider = {
     const inputTokens = usage ? getNumber(usage, "prompt_tokens") : null;
     const outputTokens = usage ? getNumber(usage, "completion_tokens") : null;
 
+    // OpenRouter returns prompt-cache stats in two possible places:
+    //   1. usage.prompt_tokens_details.cached_tokens  (OpenAI-style)
+    //   2. usage.cache_read_input_tokens              (Anthropic-style passthrough)
+    let cachedTokens: number | null = null;
+    if (usage) {
+      const promptDetails = getObject(usage, "prompt_tokens_details");
+      if (promptDetails) {
+        cachedTokens = getNumber(promptDetails, "cached_tokens");
+      }
+      // Fallback: Anthropic-style cache field
+      if (cachedTokens === null) {
+        cachedTokens = getNumber(usage, "cache_read_input_tokens");
+      }
+    }
+
     const finishReason = firstChoice
       ? getString(firstChoice, "finish_reason", "unknown")
       : "unknown";
@@ -52,10 +67,11 @@ export const openrouterProvider: Provider = {
       model: actualModel,
       inputTokens,
       outputTokens,
-      cachedTokens: null,
+      cachedTokens,
       toolCalls,
       isStreaming: request.isStreaming,
       finishReason,
     };
   },
 };
+
