@@ -11,7 +11,7 @@
  */
 
 import { createNdjsonTail } from "../core/ndjson-tail.js";
-import { readCapturedCalls, cleanupOutputFile, type SpawnHandle } from "../core/tracer.js";
+import { readCapturedCalls, type SpawnHandle } from "../core/tracer.js";
 import { buildTrace } from "../core/trace-builder.js";
 import { isStartRecord, type RawHttpCall, type Trace, type LLMStep } from "../types/trace.js";
 import type { Runtime } from "../types/config.js";
@@ -21,6 +21,7 @@ import { glyph } from "./theme.js";
 import { formatCost } from "../core/cost-calculator.js";
 
 const FRAME_MS = 80;
+const PLAIN_POLL_MS = 150;
 
 export interface RunContext {
   script: string;
@@ -29,12 +30,20 @@ export interface RunContext {
   startedAt: string; // ISO
   showCost: boolean;
   filter?: string;
+  /** Latency threshold for `latency_spike` warnings, in ms. */
+  thresholdMs?: number;
+  /** Mid-run guard: terminate the child once spend passes this many USD. */
+  budgetUsd?: number;
+  /** Redact PII from captured content (default true). */
+  redactPii?: boolean;
 }
 
-/** Apply the optional provider filter to a set of steps. */
-function filterSteps(steps: LLMStep[], filter?: string): LLMStep[] {
-  if (!filter) return steps;
-  return steps.filter((s) => s.provider === filter);
+/** What a run produced, plus whether we cut it short. */
+export interface RunResult {
+  trace: Trace;
+  exitCode: number;
+  /** Set when `--budget` tripped and we terminated the child. */
+  budgetExceeded: boolean;
 }
 
 /** Fold accumulated completed calls into live totals + steps. */
@@ -44,18 +53,30 @@ function deriveState(
   ctx: RunContext,
   startedAtMs: number,
 ): LiveState {
-  const trace = buildTrace(completedCalls, ctx.script, ctx.runtime, ctx.command, ctx.startedAt);
-  const steps = filterSteps(trace.steps as LLMStep[], ctx.filter);
+  const trace = buildTrace(completedCalls, ctx.script, ctx.runtime, ctx.command, ctx.startedAt, {
+    // The live frame shows counts and totals only — parsing, redacting and
+    // truncating every message body 12×/second is pure waste. The authoritative
+    // trace built after exit captures content normally.
+    captureContent: false,
+    latencyThresholdMs: ctx.thresholdMs,
+    providerFilter: ctx.filter,
+  });
+  const steps = trace.steps as LLMStep[];
 
   let inTok = 0;
   let outTok = 0;
   let cost = 0;
-  let costKnown = steps.length > 0;
+  let hasKnown = false;
+  let hasUnknown = false;
   for (const s of steps) {
     inTok += s.inputTokens ?? 0;
     outTok += s.outputTokens ?? 0;
-    if (s.costUsd === null) costKnown = false;
-    else cost += s.costUsd;
+    if (s.costUsd !== null) {
+      cost += s.costUsd;
+      hasKnown = true;
+    } else {
+      hasUnknown = true;
+    }
   }
 
   return {
@@ -67,9 +88,46 @@ function deriveState(
     totalInputTokens: inTok,
     totalOutputTokens: outTok,
     totalCostUsd: cost,
-    costKnown,
+    costKnown: hasKnown,
+    hasUnknownCost: hasUnknown,
     showCost: ctx.showCost,
   };
+}
+
+/**
+ * Terminate the traced child because `--budget` was exceeded.
+ *
+ * SIGTERM first so the program can flush and run its own cleanup; SIGKILL after
+ * a grace period for anything that ignores it. A budget guard that leaves a
+ * runaway agent burning money would defeat its own purpose.
+ */
+function terminateForBudget(handle: SpawnHandle): void {
+  try {
+    handle.child.kill("SIGTERM");
+  } catch {
+    /* already gone */
+  }
+  const kill = setTimeout(() => {
+    try {
+      if (handle.child.exitCode === null) handle.child.kill("SIGKILL");
+    } catch {
+      /* already gone */
+    }
+  }, 5_000);
+  // Don't hold the event loop open just to deliver a follow-up signal.
+  kill.unref?.();
+}
+
+/** Total known cost across completed calls, for the budget guard. */
+function knownCost(calls: RawHttpCall[], ctx: RunContext): number {
+  const trace = buildTrace(calls, ctx.script, ctx.runtime, ctx.command, ctx.startedAt, {
+    captureContent: false,
+  });
+  let total = 0;
+  for (const step of trace.steps) {
+    if (step.type === "llm" && step.costUsd !== null) total += step.costUsd;
+  }
+  return total;
 }
 
 /**
@@ -77,10 +135,7 @@ function deriveState(
  * The pinned region is cleared before returning, so the caller prints the final
  * static tree exactly once.
  */
-export async function runLive(
-  handle: SpawnHandle,
-  ctx: RunContext,
-): Promise<{ trace: Trace; exitCode: number }> {
+export async function runLive(handle: SpawnHandle, ctx: RunContext): Promise<RunResult> {
   const region = createLiveRegion();
   const tail = createNdjsonTail(handle.outputFile);
   const startedAtMs = Date.now();
@@ -88,6 +143,7 @@ export async function runLive(
   const inflight = new Map<number, InflightCall>();
   const completedCalls: RawHttpCall[] = [];
   let tick = 0;
+  let budgetExceeded = false;
 
   // Forward child output above the pinned region.
   handle.child.stdout?.on("data", (chunk) => region.writePassthrough(chunk, process.stdout));
@@ -106,6 +162,10 @@ export async function runLive(
         if (typeof rec.id === "number") inflight.delete(rec.id);
         completedCalls.push(rec);
       }
+    }
+    if (!budgetExceeded && ctx.budgetUsd !== undefined && knownCost(completedCalls, ctx) > ctx.budgetUsd) {
+      budgetExceeded = true;
+      terminateForBudget(handle);
     }
   }
 
@@ -129,18 +189,21 @@ export async function runLive(
   const timer = setInterval(paint, FRAME_MS);
   paint(); // paint immediately so the box appears at once
 
-  const exitCode = await handle.done;
+  let exitCode: number;
+  try {
+    exitCode = await handle.done;
+  } finally {
+    clearInterval(timer);
+    region.stop();
+  }
 
-  clearInterval(timer);
-  drain(); // final drain to catch the last records
-  region.stop();
+  try {
+    drain(); // final drain to catch the last records
+  } catch {
+    /* the authoritative read below covers us */
+  }
 
-  const calls = readCapturedCalls(handle.outputFile);
-  cleanupOutputFile(handle.outputFile);
-  const trace = buildTrace(calls, ctx.script, ctx.runtime, ctx.command, ctx.startedAt);
-  if (ctx.filter) trace.steps = filterSteps(trace.steps as LLMStep[], ctx.filter);
-
-  return { trace, exitCode };
+  return { ...finalize(handle, ctx), exitCode, budgetExceeded };
 }
 
 /**
@@ -155,9 +218,10 @@ export async function runPlain(
   handle: SpawnHandle,
   ctx: RunContext,
   opts: { progressive: boolean; childToStderr?: boolean },
-): Promise<{ trace: Trace; exitCode: number }> {
+): Promise<RunResult> {
   const tail = createNdjsonTail(handle.outputFile);
   const completedCalls: RawHttpCall[] = [];
+  let budgetExceeded = false;
 
   if (opts.childToStderr) {
     handle.child.stdout?.on("data", (chunk) => process.stderr.write(chunk));
@@ -169,7 +233,9 @@ export async function runPlain(
       if (isStartRecord(rec)) continue;
       completedCalls.push(rec);
       if (opts.progressive) {
-        const t = buildTrace([rec], ctx.script, ctx.runtime, ctx.command, ctx.startedAt);
+        const t = buildTrace([rec], ctx.script, ctx.runtime, ctx.command, ctx.startedAt, {
+          captureContent: false,
+        });
         const s = t.steps[0] as LLMStep | undefined;
         if (s) {
           const tok = s.inputTokens !== null ? `${s.inputTokens}→${s.outputTokens} tok` : "tokens ?";
@@ -178,17 +244,53 @@ export async function runPlain(
         }
       }
     }
+    if (!budgetExceeded && ctx.budgetUsd !== undefined && knownCost(completedCalls, ctx) > ctx.budgetUsd) {
+      budgetExceeded = true;
+      terminateForBudget(handle);
+    }
   };
 
-  const timer = opts.progressive ? setInterval(drain, 150) : null;
-  const exitCode = await handle.done;
-  if (timer) clearInterval(timer);
-  drain();
+  // The budget guard needs to observe calls as they land, so poll whenever a
+  // budget is set even if we are not printing progressive lines.
+  const needsPolling = opts.progressive || ctx.budgetUsd !== undefined;
+  const timer = needsPolling ? setInterval(drain, PLAIN_POLL_MS) : null;
 
-  const calls = readCapturedCalls(handle.outputFile);
-  cleanupOutputFile(handle.outputFile);
-  const trace = buildTrace(calls, ctx.script, ctx.runtime, ctx.command, ctx.startedAt);
-  if (ctx.filter) trace.steps = filterSteps(trace.steps as LLMStep[], ctx.filter);
+  let exitCode: number;
+  try {
+    exitCode = await handle.done;
+  } finally {
+    if (timer) clearInterval(timer);
+  }
 
-  return { trace, exitCode };
+  try {
+    drain();
+  } catch {
+    /* the authoritative read below covers us */
+  }
+
+  return { ...finalize(handle, ctx), exitCode, budgetExceeded };
+}
+
+/**
+ * Build the authoritative trace from the on-disk record and release the
+ * capture directory. Always re-reads the file rather than trusting the
+ * incremental buffer, so a dropped poll cannot lose a call.
+ */
+function finalize(handle: SpawnHandle, ctx: RunContext): { trace: Trace } {
+  let calls: RawHttpCall[] = [];
+  try {
+    calls = readCapturedCalls(handle.outputFile);
+  } catch {
+    // Unreadable capture file: report an empty trace rather than crashing after
+    // the user's program already ran successfully.
+  } finally {
+    handle.dispose();
+  }
+
+  const trace = buildTrace(calls, ctx.script, ctx.runtime, ctx.command, ctx.startedAt, {
+    latencyThresholdMs: ctx.thresholdMs,
+    providerFilter: ctx.filter,
+    redactPii: ctx.redactPii,
+  });
+  return { trace };
 }

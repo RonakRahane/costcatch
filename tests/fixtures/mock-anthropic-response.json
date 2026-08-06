@@ -1,0 +1,23 @@
+{
+  "id": "msg_01abc",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-4-20250514",
+  "content": [
+    {
+      "type": "tool_use",
+      "id": "toolu_01xyz",
+      "name": "web_search",
+      "input": {
+        "query": "Tesla Q4 2024 revenue"
+      }
+    }
+  ],
+  "stop_reason": "tool_use",
+  "usage": {
+    "input_tokens": 2847,
+    "output_tokens": 124,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 512
+  }
+}

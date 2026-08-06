@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref — a PR that gets three pushes in a
+# minute should not occupy the matrix three times over.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: node ${{ matrix.node }} · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # costcatch spawns child processes, resolves executables through PATH,
+        # and injects a Python sitecustomize — all three behave differently per
+        # platform, so all three platforms are load-bearing here, not decorative.
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ["18.17", "20", "22", "24"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The Python interceptor is exercised against real httpx and requests.
+      # Without these the integration suite silently skips.
+      - name: Install Python HTTP clients
+        run: python -m pip install --disable-pip-version-check --quiet httpx requests
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke-test the built CLI
+        shell: bash
+        run: |
+          node dist/index.js --version
+          node dist/index.js --help > /dev/null
+          node dist/index.js estimate --text "hello world" --model gpt-4o --json
+
+      # A published package that ships no interceptors captures nothing. Assert
+      # the runtime assets actually made it into dist/ rather than trusting the
+      # build config.
+      - name: Verify packaged interceptors
+        shell: bash
+        run: |
+          test -f dist/interceptors/node/preload.cjs
+          test -f dist/interceptors/python/sitecustomize.py
+          test -f dist/pricing/fallback-prices.json
+          ! find dist -name '__pycache__' -o -name '*.pyc' | grep . || (echo "bytecode leaked into dist" && exit 1)
+
+  package:
+    name: package contents
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Show what would be published
+        run: npm pack --dry-run

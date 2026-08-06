@@ -1,0 +1,10 @@
+# package.json `files` is the authority on what gets published — it is an
+# allowlist, so this file is only a second line of defence for anything that
+# somehow lands inside `dist/`.
+#
+# Verify what will actually ship with:  npm pack --dry-run
+
+**/__pycache__/
+**/*.pyc
+**/.DS_Store
+**/*.map.orig
