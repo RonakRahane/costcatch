@@ -56,8 +56,15 @@ export interface Provider {
   /** URL patterns this provider matches */
   urlPatterns: RegExp[];
 
-  /** Extract model and streaming flag from the request body. */
-  parseRequest(body: unknown): ParsedRequest;
+  /**
+   * Extract model and streaming flag from the request.
+   *
+   * `url` is supplied because not every provider puts the model in the body:
+   * Gemini encodes it in the path (`/v1beta/models/<model>:generateContent`)
+   * and Azure encodes the deployment name the same way. Providers that only
+   * need the body may omit the parameter.
+   */
+  parseRequest(body: unknown, url?: string): ParsedRequest;
 
   /** Parse the response body into a standardized format. */
   parseResponse(body: unknown, request: ParsedRequest): ParsedLLMCall;

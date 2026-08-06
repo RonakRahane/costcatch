@@ -147,20 +147,15 @@ function renderBar(fraction: number, width: number, fillColor: string = palette.
   return bar;
 }
 
-/** Gradient bar: teal→gold filled blocks. */
+/** Bar chart: filled blocks (soft white) + empty background (dark gray). */
 function renderGradientBar(fraction: number, width: number): string {
   const f = Math.max(0, Math.min(1, fraction));
   const filledCells = Math.round(f * width);
   const emptyCells = width - filledCells;
 
-  let bar = "";
-  for (let i = 0; i < filledCells; i++) {
-    const t = filledCells > 1 ? i / (filledCells - 1) : 0;
-    const color = t < 0.6 ? palette.accent : palette.cost;
-    bar += chalk.hex(color)(BAR_CH.full);
-  }
-  bar += chalk.hex(palette.faint)(BAR_CH.light.repeat(emptyCells));
-  return bar;
+  const filledBar = chalk.hex(palette.text)(BAR_CH.full.repeat(filledCells));
+  const emptyBar = chalk.hex(palette.faint)(BAR_CH.light.repeat(emptyCells));
+  return filledBar + emptyBar;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -245,24 +240,24 @@ export function renderSingleEstimate(
     const costTable = renderTable(
       [
         mkCell("Scale", dim("Scale")),
-        mkCell("Cost", dim("Cost"), "right"),
+        mkCell("Est. Cost (Monthly)", dim("Est. Cost (Monthly)"), "right"),
       ],
       [
         [
-          mkCell("Per call", dim("Per call")),
+          mkCell("Per single call", dim("Per single call")),
           mkCell(formatCost(costUsd), c("cost", formatCost(costUsd)), "right"),
         ],
         [
-          mkCell("10 calls/day", dim("10 calls/day")),
-          mkCell(`${formatCost(costUsd * 10 * 30)}/mo`, c("cost", `${formatCost(costUsd * 10 * 30)}/mo`), "right"),
+          mkCell("10 calls/day (300/mo)", dim("10 calls/day (300/mo)")),
+          mkCell(formatCost(costUsd * 10 * 30), c("cost", formatCost(costUsd * 10 * 30)), "right"),
         ],
         [
-          mkCell("100 calls/day", dim("100 calls/day")),
-          mkCell(`${formatCost(costUsd * 100 * 30)}/mo`, c("cost", `${formatCost(costUsd * 100 * 30)}/mo`), "right"),
+          mkCell("100 calls/day (3k/mo)", dim("100 calls/day (3k/mo)")),
+          mkCell(formatCost(costUsd * 100 * 30), c("cost", formatCost(costUsd * 100 * 30)), "right"),
         ],
         [
-          mkCell("1,000 calls/day", dim("1,000 calls/day")),
-          mkCell(`${formatCost(costUsd * 1000 * 30)}/mo`, c("cost", `${formatCost(costUsd * 1000 * 30)}/mo`), "right"),
+          mkCell("1,000 calls/day (30k/mo)", dim("1,000 calls/day (30k/mo)")),
+          mkCell(formatCost(costUsd * 1000 * 30), c("cost", formatCost(costUsd * 1000 * 30)), "right"),
         ],
       ],
       { indent: 4 },
@@ -345,9 +340,12 @@ export function renderComparison(
   // Sort cheapest first
   const sorted = [...results].sort((a, b) => (a.costUsd ?? 0) - (b.costUsd ?? 0));
   const maxCost = Math.max(...results.map((r) => r.costUsd ?? 0), 0.000001);
-  const barWidth = 12;
+  const barWidth = 10;
 
   const compRows = sorted.map((r) => {
+    // Strip leading provider prefix for clean table display (e.g. "deepseek/deepseek-v4-pro" -> "deepseek-v4-pro")
+    const cleanModel = r.model.includes("/") ? r.model.split("/").pop()! : r.model;
+    const modelDisplay = truncate(cleanModel, 20);
     const tokStr = `~${r.estimate.tokens.toLocaleString()}`;
     const costStr = r.costUsd !== null ? formatCost(r.costUsd) : "$?.??";
     const costFraction = (r.costUsd ?? 0) / maxCost;
@@ -355,7 +353,7 @@ export function renderComparison(
     const barStyled = renderGradientBar(costFraction, barWidth);
 
     return [
-      mkCell(truncate(r.model, 26), chalk.hex(palette.text).bold(truncate(r.model, 26))),
+      mkCell(modelDisplay, chalk.hex(palette.text).bold(modelDisplay)),
       mkCell(tokStr, c("token", tokStr), "right"),
       mkCell(costStr, r.costUsd !== null ? c("cost", costStr) : c("warn", costStr), "right"),
       mkCell(barPlain, barStyled),
@@ -370,7 +368,7 @@ export function renderComparison(
       mkCell("Impact", dim("Impact")),
     ],
     compRows,
-    { indent: 4 },
+    { indent: 2 },
   );
   lines.push(compTable);
 

@@ -22,8 +22,11 @@ export interface RunFlags {
   threshold?: number;
   /** Only show summary, not full tree */
   quiet: boolean;
-  /** Show tokens arriving in real time */
-  stream: boolean;
+  /**
+   * Redact PII (emails, phones, cards) from captured content. Default true.
+   * Secrets and terminal escapes are always scrubbed regardless.
+   */
+  redact?: boolean;
   /** After run, show full conversation content for each step */
   inspect: boolean;
   /** Auto-diff against the most recent saved trace for this script */
@@ -32,7 +35,13 @@ export interface RunFlags {
   maxCost?: number;
   /** CI gate: non-zero exit if LLM call count exceeds N */
   maxCalls?: number;
-  /** Mid-run guard: warn/abort if cost exceeds N USD during the run */
+  /**
+   * Mid-run guard: terminate the traced program once known spend exceeds N USD.
+   *
+   * Enforced by the live controller as calls land (SIGTERM, then SIGKILL after a
+   * grace period), so a runaway loop is stopped rather than merely reported
+   * after the fact.
+   */
   budget?: number;
 }
 

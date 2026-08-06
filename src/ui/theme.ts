@@ -13,18 +13,23 @@ import stringWidth from "string-width";
 // Palette — monochrome black & white
 // ---------------------------------------------------------------------------
 
-/** Raw hex values, by semantic role. Monochrome — pure black & white. */
+/**
+ * Raw hex values, by semantic role.
+ *
+ * Professional dark-mode palette inspired by Claude Code's terminal UI:
+ * subtle blue-cyan accents, green success, amber costs, muted purple tokens.
+ */
 export const palette = {
-  text: "#ffffff",     // pure white — primary text
-  dim: "#999999",      // medium gray — secondary text
-  faint: "#555555",    // dark gray — borders, connectors
-  accent: "#cccccc",   // light gray — accents
-  accent2: "#aaaaaa",  // medium-light gray
-  ok: "#ffffff",       // white — success
-  warn: "#bbbbbb",     // light gray — warnings
-  err: "#ffffff",      // white — errors (rely on glyphs ✗)
-  cost: "#ffffff",     // white — money
-  token: "#dddddd",    // near-white — token counts
+  text: "#e8eaed",     // soft white — primary text (easy on the eyes)
+  dim: "#8b8f96",      // cool gray — secondary text
+  faint: "#4a4e54",    // dark gray — borders, connectors
+  accent: "#7cacf8",   // soft blue — accents, step numbers
+  accent2: "#a78bfa",  // muted purple — spinners, secondary accents
+  ok: "#6bcb77",       // soft green — success badges
+  warn: "#f7c948",     // warm amber — warnings, tool calls
+  err: "#f87171",      // soft red — errors
+  cost: "#fbbf24",     // golden amber — money (draws the eye)
+  token: "#a78bfa",    // muted purple — token counts
 } as const;
 
 export type ColorRole = keyof typeof palette;
@@ -100,13 +105,59 @@ export function spinnerFrame(tick: number): string {
 }
 
 /** Circled step numbers 1–20, then falls back to "(n)". */
-const CIRCLED = [
-  "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩",
-  "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳",
-];
+// const CIRCLED = [
+//   "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩",
+//   "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳",
+// ];
 
 export function stepNumber(id: number): string {
-  return id >= 1 && id <= CIRCLED.length ? CIRCLED[id - 1] : `(${id})`;
+  return `▶ Step ${id}`;
+}
+
+// ---------------------------------------------------------------------------
+// Wordmark
+//
+// These live here rather than in ui/matrix-banner.ts because every renderer
+// needs them, and matrix-banner pulls in `cfonts` (~1 MB of font tables) for the
+// `init` splash alone. Importing the wordmark used to drag cfonts into the
+// startup path of every single command.
+// ---------------------------------------------------------------------------
+
+/** The static one-line wordmark used in headers. */
+export function wordmark(): string {
+  return chalk.white.bold("costcatch");
+}
+
+/** Glyphs the "un-settled" columns cycle through before landing. */
+const MATRIX_GLYPHS = "▁▂▃▄▅▆▇█░▒▓╌╍┄┅";
+
+/** Deterministic pseudo-random in [0,1) from two integers. */
+function rand(a: number, b: number): number {
+  const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/** Reveal `target` left-to-right with a dot-matrix shimmer. */
+export function matrixReveal(target: string, tick: number, revealTicks: number = 14): string {
+  if (tick >= revealTicks) return chalk.white.bold(target);
+
+  let out = "";
+  for (let i = 0; i < target.length; i++) {
+    const ch = target[i];
+    if (ch === " ") {
+      out += " ";
+      continue;
+    }
+    const threshold = (i / target.length) * revealTicks;
+    if (tick >= threshold) {
+      out += chalk.white(ch);
+    } else {
+      const g = MATRIX_GLYPHS[Math.floor(rand(i, tick) * MATRIX_GLYPHS.length)];
+      const near = tick / Math.max(threshold, 1);
+      out += chalk.hex(near > 0.6 ? "#aaaaaa" : palette.faint)(g);
+    }
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +170,7 @@ const gradientCache = new Map<string, string>();
  * Build a per-character monochrome gradient across `text`.
  * White → gray for the clean B&W look.
  */
-export function gradient(text: string, hex1: string = "#ffffff", hex2: string = "#888888"): string {
+export function gradient(text: string, hex1: string = "#7cacf8", hex2: string = "#a78bfa"): string {
   const key = `${text}\0${hex1}\0${hex2}`;
   const cached = gradientCache.get(key);
   if (cached) return cached;
@@ -154,8 +205,8 @@ function hexToRgb(hex: string): [number, number, number] {
 // ---------------------------------------------------------------------------
 
 /** Terminal width, capped for readability. */
-export function termWidth(max: number = 90): number {
-  return Math.min(process.stdout.columns || 90, max);
+export function termWidth(max: number = 120): number {
+  return Math.min(process.stdout.columns || 120, max);
 }
 
 /** Visible width in terminal cells (ANSI-stripped, wide-glyph aware). */
@@ -178,24 +229,38 @@ export function truncate(s: string, maxLen: number): string {
 // Square-box frame — shared across all renderers
 // ---------------------------------------------------------------------------
 
-/** Top rule: `┌─ left ───────── right ─┐`. */
-export function frameTop(left: string, right: string, width: number): string {
-  const inner = width - 2;
-  const used = visibleLength(left) + visibleLength(right) + 2;
-  const fill = Math.max(1, inner - used - 2);
-  return (
-    faint(glyph.tl + glyph.h) + " " + left + " " +
-    faint(glyph.h.repeat(fill)) + " " + right + " " +
-    faint(glyph.h + glyph.tr)
-  );
+/** Solid top border: `┌────────────────────────────┐`. */
+export function frameTopSolid(width: number): string {
+  return faint(glyph.tl + glyph.h.repeat(Math.max(0, width - 2)) + glyph.tr);
 }
 
-/** Bottom rule: `└─ text ─────────────┘`. */
+/** Solid bottom border: `└────────────────────────────┘`. */
+export function frameBottomSolid(width: number): string {
+  return faint(glyph.bl + glyph.h.repeat(Math.max(0, width - 2)) + glyph.br);
+}
+
+/** Solid middle divider border: `├────────────────────────────┤`. */
+export function frameDivider(width: number): string {
+  return faint(glyph.ml + glyph.h.repeat(Math.max(0, width - 2)) + glyph.mr);
+}
+
+/** Framed header line with left+right content inside the box: `│ left                    right │`. */
+export function frameHeader(left: string, right: string, width: number): string {
+  const inner = width - 4; // "│ " ... " │"
+  const visLeft = visibleLength(left);
+  const visRight = visibleLength(right);
+  const pad = Math.max(0, inner - visLeft - visRight);
+  return `${faint(glyph.v)} ${left}${" ".repeat(pad)}${right} ${faint(glyph.v)}`;
+}
+
+/** Top rule: solid top border + framed header line inside the box. */
+export function frameTop(left: string, right: string, width: number): string {
+  return `${frameTopSolid(width)}\n${frameHeader(left, right, width)}`;
+}
+
+/** Bottom rule: framed content line inside the box + solid bottom border. */
 export function frameBottom(text: string, width: number): string {
-  const inner = width - 2;
-  const used = visibleLength(text) + 2;
-  const fill = Math.max(1, inner - used - 2);
-  return faint(glyph.bl + glyph.h) + " " + text + " " + faint(glyph.h.repeat(fill) + glyph.h + glyph.br);
+  return `${frameLine(text, width)}\n${frameBottomSolid(width)}`;
 }
 
 /** A framed body line with left+right rails, padded to width. */
