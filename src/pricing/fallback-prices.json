@@ -114,5 +114,45 @@
   "deepseek-reasoner": {
     "input_cost_per_token": 0.00000055,
     "output_cost_per_token": 0.00000219
+  },
+  "deepseek-v4-pro": {
+    "input_cost_per_token": 0.000000435,
+    "output_cost_per_token": 0.00000087
+  },
+  "embed-english-v3.0": {
+    "input_cost_per_token": 0.0000001,
+    "output_cost_per_token": 0
+  },
+  "embed-english-light-v3.0": {
+    "input_cost_per_token": 0.0000001,
+    "output_cost_per_token": 0
+  },
+  "embed-multilingual-v3.0": {
+    "input_cost_per_token": 0.0000001,
+    "output_cost_per_token": 0
+  },
+  "gemini-2.5-flash": {
+    "input_cost_per_token": 0.00000015,
+    "output_cost_per_token": 0.0000006
+  },
+  "gemini-2.5-flash-preview-04-17": {
+    "input_cost_per_token": 0.00000015,
+    "output_cost_per_token": 0.0000006
+  },
+  "gemma-3n-e2b-it": {
+    "input_cost_per_token": 0,
+    "output_cost_per_token": 0
+  },
+  "text-embedding-3-small": {
+    "input_cost_per_token": 0.00000002,
+    "output_cost_per_token": 0
+  },
+  "text-embedding-3-large": {
+    "input_cost_per_token": 0.00000013,
+    "output_cost_per_token": 0
+  },
+  "text-embedding-ada-002": {
+    "input_cost_per_token": 0.0000001,
+    "output_cost_per_token": 0
   }
 }

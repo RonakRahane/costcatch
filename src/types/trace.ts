@@ -31,23 +31,19 @@ export interface StepMessage {
  * The actual content of an LLM call — the prompt that went in and the text
  * that came out. Secrets/PII are redacted and long fields truncated at capture.
  *
- * DELTA-STORED: chat APIs resend the whole growing history every turn, so we
- * only keep what's NEW in this call. `messages` holds the tail added since the
- * previous LLM call; `carried` counts the identical leading messages we omitted
- * (and `carriedFromStep` says which step they match). This keeps a long agent
- * run linear instead of quadratic, and makes `show` highlight what changed.
+ * Content is stored in full per step, not as a delta against the previous call.
+ * Chat APIs resend the whole growing history every turn, so a long agent run
+ * would otherwise grow this quadratically; the bound comes from two caps
+ * instead — per field (see `CAP_*` in core/content-extractor.ts) and per trace
+ * (`CONTENT_BUDGET_CHARS` in core/trace-builder.ts). Once the per-trace budget
+ * is spent, later steps keep their metrics and record `truncated: true` with no
+ * content, rather than letting one run produce an unbounded file.
  */
 export interface StepContent {
-  /** System prompt (null if identical to the previous call — see systemUnchanged). */
+  /** System prompt, or null when the request carried none. */
   system: string | null;
-  /** True when the system prompt was omitted because it matched the prior call. */
-  systemUnchanged?: boolean;
-  /** NEW input messages added since the previous LLM call. */
+  /** Input messages, excluding the system message. */
   messages: StepMessage[];
-  /** Count of leading messages carried unchanged from the previous call. */
-  carried?: number;
-  /** Which earlier step the carried messages came from. */
-  carriedFromStep?: number;
   /** The model's text output for this call. */
   output: string | null;
   /** True if any field was truncated to keep the trace file bounded. */

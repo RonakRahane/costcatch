@@ -25,9 +25,9 @@ import {
   frameTop,
   frameBottom,
   frameLine,
+  wordmark,
 } from "../ui/theme.js";
 import { formatCost } from "../core/cost-calculator.js";
-import { wordmark } from "../ui/matrix-banner.js";
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -151,17 +151,6 @@ function renderStepContent(step: LLMStep, width: number, grep: string | null): s
     for (const line of wrapText(content.system, inner - 2)) {
       rows.push(frameLine(`  ${highlightLine(line, grep)}`, width));
     }
-  } else if (content.systemUnchanged) {
-    rows.push(frameLine(dim("  system: (unchanged from previous step)"), width));
-  }
-
-  // Carried messages
-  if (content.carried && content.carried > 0) {
-    rows.push(frameLine("", width));
-    rows.push(frameLine(
-      dim(`  ${glyph.flow} ${content.carried} message${content.carried === 1 ? "" : "s"} carried from step ${content.carriedFromStep ?? "?"} (not repeated)`),
-      width,
-    ));
   }
 
   // Messages
@@ -297,9 +286,6 @@ function renderShowPlain(trace: Trace, opts: ShowOptions): string {
         lines.push(`    ${line.slice(0, 200)}`);
       }
       if (content.system.split("\n").length > 20) lines.push("    ...(truncated)");
-    }
-    if (content.carried && content.carried > 0) {
-      lines.push(`  (${content.carried} messages carried from step ${content.carriedFromStep ?? "?"})`);
     }
     for (const msg of content.messages) {
       lines.push(`  ${msg.role.toUpperCase()}:`);

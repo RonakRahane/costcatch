@@ -4,36 +4,59 @@
   "description": "Zero-instrumentation LLM agent tracer & cost tracker. Like `time` but for AI agents.",
   "type": "module",
   "bin": {
-    "costcatch": "./dist/index.js"
+    "costcatch": "dist/index.js"
+  },
+  "exports": {
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm run test && npm run build",
+    "prepublishOnly": "npm run verify"
   },
   "keywords": [
     "llm",
     "agent",
     "trace",
+    "tracing",
+    "observability",
     "debug",
     "openai",
     "anthropic",
+    "gemini",
     "langchain",
     "cli",
     "cost",
-    "tokens"
+    "cost-tracking",
+    "tokens",
+    "finops"
   ],
   "author": "Ronak Rahane",
   "license": "MIT",
+  "homepage": "https://github.com/costcatch/costcatch#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/costcatch/costcatch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/costcatch/costcatch/issues"
+  },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.17.0"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "dependencies": {
@@ -46,6 +69,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
+    "@vitest/coverage-v8": "^3.1.0",
     "tsup": "^8.4.0",
     "typescript": "^5.7.0",
     "vitest": "^3.1.0"

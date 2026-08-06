@@ -22,8 +22,8 @@ import {
   frameTop,
   frameBottom,
   frameLine,
+  matrixReveal,
 } from "../ui/theme.js";
-import { matrixReveal } from "../ui/matrix-banner.js";
 import { formatCost } from "../core/cost-calculator.js";
 
 /** A call that has started but not yet completed. */
@@ -45,11 +45,12 @@ export interface LiveState {
   totalOutputTokens: number;
   totalCostUsd: number;
   costKnown: boolean;
+  /** True when at least one step has unknown pricing (shows ≥ prefix). */
+  hasUnknownCost: boolean;
   showCost: boolean;
 }
 
-/** How many completed rows to keep in the pinned box (older ones scrolled off). */
-const MAX_VISIBLE_STEPS = 6;
+
 
 function fmtDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
@@ -95,9 +96,11 @@ function renderCompleted(step: LLMStep, width: number, showCost: boolean): strin
     );
   }
 
-  // Final-answer marker when there were no tool calls
-  if (step.toolCalls.length === 0 && step.finishReason && step.finishReason !== "unknown") {
-    lines.push(bodyLine(`   ${faint(glyph.leaf)} ${c("ok", glyph.ok)} ${dim(`${step.finishReason} — final answer`)}`, width));
+  // Cache badge
+  if (step.cachedTokens !== null && step.cachedTokens > 0) {
+    lines.push(
+      bodyLine(`   ${faint(glyph.branch)} ${c("ok", glyph.cache)} ${c("ok", `${step.cachedTokens.toLocaleString()} cached`)}`, width),
+    );
   }
 
   return lines;
@@ -127,11 +130,20 @@ export function renderLiveFrame(state: LiveState, tick: number, nowMs: number): 
 
   const totalCalls = state.completed.length + state.inflight.length;
   const elapsed = fmtDuration(nowMs - state.startedAtMs);
-  const costStr = state.showCost
-    ? state.costKnown
-      ? c("cost", formatCost(state.totalCostUsd))
-      : dim("$…")
-    : "";
+
+  // Cost display: show ≥ prefix when some steps are unpriced
+  let costStr = "";
+  if (state.showCost) {
+    if (state.costKnown && state.totalCostUsd > 0) {
+      costStr = state.hasUnknownCost
+        ? c("cost", `≥${formatCost(state.totalCostUsd)}`)
+        : c("cost", formatCost(state.totalCostUsd));
+    } else if (!state.costKnown && state.totalCostUsd === 0) {
+      costStr = dim("$…");
+    } else {
+      costStr = c("cost", formatCost(state.totalCostUsd));
+    }
+  }
 
   // ── Header ──
   const wm = matrixReveal("costcatch", tick);
@@ -142,13 +154,8 @@ export function renderLiveFrame(state: LiveState, tick: number, nowMs: number): 
   lines.push(topBorder(headerLeft, headerRight, width));
   lines.push(bodyLine("", width));
 
-  // ── Completed steps (last K) ──
-  const shown = state.completed.slice(-MAX_VISIBLE_STEPS);
-  const hidden = state.completed.length - shown.length;
-  if (hidden > 0) {
-    lines.push(bodyLine(faint(`  ⋮ ${hidden} earlier ${hidden === 1 ? "step" : "steps"} above`), width));
-  }
-  for (const step of shown) {
+  // ── Completed steps (renders all steps) ──
+  for (const step of state.completed) {
     lines.push(...renderCompleted(step, width, state.showCost));
   }
 
@@ -168,7 +175,15 @@ export function renderLiveFrame(state: LiveState, tick: number, nowMs: number): 
     `${c("accent", String(totalCalls))} ${dim(totalCalls === 1 ? "call" : "calls")}`,
     `${c("token", compact(state.totalInputTokens))}${faint(glyph.arrow)}${c("token", compact(state.totalOutputTokens))} ${dim("tok")}`,
   ];
-  if (state.showCost) parts.push(state.costKnown ? c("cost", formatCost(state.totalCostUsd)) : dim("$…"));
+  if (state.showCost) {
+    if (state.costKnown && state.hasUnknownCost) {
+      parts.push(c("cost", `≥${formatCost(state.totalCostUsd)}`));
+    } else if (state.costKnown) {
+      parts.push(c("cost", formatCost(state.totalCostUsd)));
+    } else {
+      parts.push(dim("$…"));
+    }
+  }
   lines.push(bottomBorder(parts.join(dim(" · ")), width));
 
   return lines.join("\n");
