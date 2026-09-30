@@ -492,6 +492,784 @@ export default function Docs() {
             </p>
             <Cap id="help" />
           </section>
+
+          <section className="doc-sec" id="init">
+            <div className="doc-cmd">
+              <CmdHead name="init" no="01 / 09" kicker="setup & pricing" />
+              <Usage>costcatch init [--offline]</Usage>
+              <p className="doc-p">
+                Sets costcatch up in the current folder: makes a <code>.costcatch/</code> folder to
+                keep saved runs in, tells git to ignore it, downloads the price list, and prints the
+                panel below. There is nothing to configure after this — no config file, no key, no
+                project id, no account.
+              </p>
+              <div className="framed">
+                <span className="frame-ver">v0.1.0</span>
+                <div className="splash">
+                  <div className="splash-col">
+                    <h4>About</h4>
+                    <p>
+                      Zero-instrumentation LLM agent tracer &amp; cost tracker. Like{" "}
+                      <code>time</code>, for AI agents.
+                    </p>
+                    <h4>Features</h4>
+                    <ul className="splash-list">
+                      <li>live trace in the terminal</li>
+                      <li>per-call cost tracking</li>
+                      <li>prompt cost estimation</li>
+                      <li>auto-diff between runs</li>
+                      <li>CI assertion gates</li>
+                      <li>secret &amp; PII redaction</li>
+                    </ul>
+                  </div>
+                  <div className="splash-col">
+                    <h4>Commands</h4>
+                    <div>
+                      {SPLASH_COMMANDS.map(([name, desc]) => (
+                        <div className="splash-cmd" key={name}>
+                          <b>{name}</b>
+                          <span>{desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <h4>Quick start</h4>
+                    <div className="splash-cmd">
+                      <b>$</b>
+                      <span>costcatch python3 agent.py</span>
+                    </div>
+                    <div className="splash-cmd">
+                      <b>$</b>
+                      <span>costcatch node agent.mjs</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <h3 className="doc-h2">The same panel, as the terminal draws it</h3>
+              <Cap id="init" />
+
+              <h3 className="doc-h2">On a machine with no internet</h3>
+              <p className="doc-p">
+                <code>--offline</code> skips the download and uses the copy of the price list that
+                ships inside the package, so costcatch works on a machine that cannot reach the
+                internet at all.
+              </p>
+              <Cap id="initOffline" note="--offline" />
+            </div>
+          </section>
+
+          <section className="doc-sec" id="run">
+            <div className="doc-cmd">
+              <CmdHead name="run" no="02 / 09" kicker="the default command" />
+              <Usage>costcatch run [flags] &lt;command&gt;</Usage>
+              <p className="doc-p">
+                Runs a Python or Node command and prices it. Your program&apos;s own output comes
+                through untouched, and costcatch&apos;s report follows it. Read each row left to
+                right: whether the call worked, which call it was, how long it took, tokens in and
+                out, what it cost, a bar comparing that cost to the most expensive call in the run,
+                and how much of the prompt the provider had already cached.
+              </p>
+              <p className="doc-p">
+                The <code>├─ ▸</code> lines underneath are the tools the model asked for on that
+                call. Putting each one under the call that asked is what makes an agent readable —
+                call 1 below wanted two weather lookups and a multiplication.
+              </p>
+              <Cap id="run" note="--save" />
+
+              <div className="note">
+                <b>The bottom line is the one that matters.</b> A single run costing{" "}
+                <code>$0.00019</code> sounds like nothing. At a thousand runs a day it is{" "}
+                <code>$5.59 a month</code> for this one agent — and that is the number worth arguing
+                about, which is why costcatch always prints it.
+              </div>
+
+              <h3 className="doc-h2">--quiet · just the total</h3>
+              <Cap id="runQuiet" note="--quiet" />
+
+              <h3 className="doc-h2">--no-color · for log files</h3>
+              <p className="doc-p">
+                Not the same box with the colour taken out, but a different layout altogether: flat
+                indented lines. Box drawing in a build log is noise rather than structure.
+              </p>
+              <Cap id="runNoColor" note="--no-color" />
+
+              <h3 className="doc-h2">--json · for other programs to read</h3>
+              <p className="doc-p">
+                The run goes to standard output and your program&apos;s own output moves to standard
+                error, so the two never get mixed together in a pipeline. costcatch also waits until
+                the very end to set its exit code, so nothing is cut off partway down a pipe —{" "}
+                <code>costcatch --json … | jq</code> relies on that.
+              </p>
+              <Cap id="runJson" note="--json" />
+
+              <h3 className="doc-h2">--inspect · show the whole conversation</h3>
+              <Cap id="runInspect" note="--inspect" />
+
+              <h3 className="doc-h2">--compare-last · did my change help?</h3>
+              <p className="doc-p">
+                Change a prompt, run it, and see what moved against the previous run of the same
+                script — without having to name either file. This saves the run too, so you do not
+                need <code>--save</code> as well.
+              </p>
+              <Cap id="runCompareLast" note="--compare-last" />
+
+              <h3 className="doc-h2">--save-as, --no-cost</h3>
+              <p className="doc-p">
+                <code>--save-as</code> always writes to the same filename, which is how you keep
+                one run around as a fixed point to compare everything else against.{" "}
+                <code>--no-cost</code> hides the money columns and keeps the token ones.
+              </p>
+              <Cap id="runSaveAs" note="--save-as baseline --no-cost" />
+
+              <h3 className="doc-h2">--threshold · say what &quot;too slow&quot; means</h3>
+              <p className="doc-p">
+                By default costcatch works out what counts as slow from the run itself. This
+                replaces that with a number of milliseconds you choose, for when you already know.
+              </p>
+              <Cap id="runThreshold" note="--threshold 3000" />
+
+              <h3 className="doc-h2">--no-redact · keep names and emails in the file</h3>
+              <p className="doc-p">
+                By default costcatch hides personal details before saving. This turns that off. It
+                does <em>not</em> turn off secret-stripping: passwords, keys and tokens are removed
+                every time, whatever you pass.
+              </p>
+              <Cap id="runNoRedact" note="--no-redact" />
+            </div>
+          </section>
+
+          <section className="doc-sec" id="watch">
+            <div className="doc-cmd">
+              <CmdHead name="watch" no="03 / 09" kicker="always live, always saved" />
+              <Usage>costcatch watch [flags] &lt;command&gt;</Usage>
+              <p className="doc-p">
+                The same as <code>run</code> with two things switched on: the live view stays up
+                for the whole run, and the run is always saved. Every <code>run</code> option works
+                here too — <code>--save</code> is just redundant.
+              </p>
+              <Cap id="watch" />
+              <div className="note">
+                The live view redraws over itself, and only when you are watching a real terminal.
+                It survives a task runner that prefixes every line it forwards — turborepo, nx —
+                because a redraw contains exactly one newline and reaches every row by cursor
+                movement, so a label injected at line starts never lands inside the box; under
+                turborepo the box is also indented to sit beneath the labels. Down a pipe or in CI it
+                drops to one line per call and the box at exit.
+              </div>
+            </div>
+          </section>
+
+          <section className="doc-sec" id="show">
+            <div className="doc-cmd">
+              <CmdHead name="show" no="04 / 09" kicker="read the conversation" />
+              <Usage>costcatch show [file] [--step N] [--grep term]</Usage>
+              <p className="doc-p">
+                Shows what was actually sent and received in a saved run: the instructions you
+                gave, every message, what your tools sent back, and what the model replied. With no
+                filename it opens the most recent run in <code>.costcatch/</code>.
+              </p>
+              <Cap id="showStep" note="--step 2" />
+
+              <h3 className="doc-h2">--grep · find the turn it happened on</h3>
+              <p className="doc-p">
+                Searches the saved text and prints only the calls that match — for when you know
+                what appeared but not which turn it appeared on.
+              </p>
+              <Cap id="showGrep" note="--grep" />
+            </div>
+          </section>
+
+          <section className="doc-sec" id="replay">
+            <div className="doc-cmd">
+              <CmdHead name="replay" no="05 / 09" kicker="offline re-render" />
+              <Usage>costcatch replay [file] [--json] [--no-cost]</Usage>
+              <p className="doc-p">
+                Prints a saved run&apos;s report again. Nothing is sent, nothing is charged, and
+                your agent does not run a second time — the saved file already holds everything the
+                report needs.
+              </p>
+              <Cap id="replay" />
+              <h3 className="doc-h2">--no-cost</h3>
+              <Cap id="replayNoCost" note="--no-cost" />
+            </div>
+          </section>
+
+          <section className="doc-sec" id="diff">
+            <div className="doc-cmd">
+              <CmdHead name="diff" no="06 / 09" kicker="compare two runs" />
+              <Usage>costcatch diff [a] [b] [--json]</Usage>
+              <p className="doc-p">
+                Compares two saved runs. With no arguments it takes the last two runs of the same
+                script, which is what you want right after changing a prompt. It shows what moved in
+                the things that cost money — number of calls, tools used, biggest prompt, total —
+                plus the tools each run used that the other did not.
+              </p>
+              <Cap id="diff" />
+              <h3 className="doc-h2">--json</h3>
+              <Cap id="diffJson" note="--json" />
+            </div>
+          </section>
+
+          <section className="doc-sec" id="stats">
+            <div className="doc-cmd">
+              <CmdHead name="stats" no="07 / 09" kicker="spend across every run" />
+              <Usage>
+                costcatch stats [--today|--week] [--script &lt;name&gt;] [--model &lt;name&gt;]
+                [--json]
+              </Usage>
+              <p className="doc-p">
+                Adds up every saved run: which scripts cost the most, which models cost the most,
+                the average size of a run, and the slowest runs. This is the end-of-month view —
+                which script, and which model, is actually taking the money.
+              </p>
+              <Cap id="stats" />
+              <h3 className="doc-h2">--json</h3>
+              <Cap id="statsJson" note="--json" />
+            </div>
+          </section>
+
+          <section className="doc-sec" id="estimate">
+            <div className="doc-cmd">
+              <CmdHead name="estimate" no="08 / 09" kicker="before you spend" />
+              <Usage>
+                costcatch estimate [file] [--text &quot;…&quot;] [--model a,b] [--breakdown]
+                [--max-cost &lt;usd&gt;] [--json]
+              </Usage>
+              <p className="doc-p">
+                Tells you how many tokens a prompt is and what it will cost to send, without
+                sending it. A model with no price on the list prints <code>$?.??</code> rather than
+                a guess.
+              </p>
+              <Cap id="estimateCompare" note="--model gpt-4o,claude-sonnet-4,…" />
+
+              <h3 className="doc-h2">--breakdown · which part is the expensive part</h3>
+              <p className="doc-p">
+                Splits a prompt up section by section. This is how you find the 400-token block of
+                instructions nobody has read since the day it was written.
+              </p>
+              <Cap id="estimateBreakdown" note="--breakdown" />
+
+              <h3 className="doc-h2">--json</h3>
+              <Cap id="estimateJson" note="--json" />
+
+              <h3 className="doc-h2">--max-cost · fail before anything is sent</h3>
+              <p className="doc-p">
+                <code>estimate</code> takes a cost limit as well, so a prompt template can fail your
+                build before it has ever reached a model.
+              </p>
+              <Cap id="estimateGate" note="--max-cost" />
+            </div>
+          </section>
+
+          <section className="doc-sec" id="clean">
+            <div className="doc-cmd">
+              <CmdHead name="clean" no="09 / 09" kicker="retention" />
+              <Usage>costcatch clean [--keep N] [--older-than D] [--dry-run]</Usage>
+              <p className="doc-p">
+                Deletes old saved runs. The two options narrow each other rather than adding up:{" "}
+                <code>--keep</code> is a floor, not a second way of choosing, so{" "}
+                <code>--keep 10 --older-than 7</code> deletes anything older than a week{" "}
+                <em>except</em> the ten most recent.
+              </p>
+              <Cap id="cleanNoCriterion" note="no criterion given" />
+              <p className="doc-p">
+                On its own it refuses to do anything, because the default behaviour of a delete
+                command must never be a guess. <code>--dry-run</code> lists exactly what would go,
+                without touching a thing:
+              </p>
+              <Cap id="cleanDryRun" note="--keep 4 --dry-run" />
+            </div>
+          </section>
+
+          <section className="doc-sec" id="flags">
+            <div className="label">
+              <span className="sig" aria-hidden />
+              reference
+            </div>
+            <h2 className="doc-h1" style={{ marginTop: 12 }}>
+              run flags
+            </h2>
+            <p className="doc-p">
+              All of these work with <code>run</code> and with <code>watch</code>, except that{" "}
+              <code>watch</code> saves the run whether you ask it to or not.
+            </p>
+            <div className="tblwrap"><table className="tbl">
+              <tbody>
+                {FLAGS.map(([flag, body]) => (
+                  <tr key={flag}>
+                    <td>
+                      <code>{flag}</code>
+                    </td>
+                    <td>{body}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table></div>
+          </section>
+
+          <section className="doc-sec" id="security">
+            <h2 className="doc-h1">Security &amp; redaction</h2>
+
+            <h3 className="doc-h2">Your API key cannot be captured</h3>
+            <p className="doc-p">
+              The interceptor never reads request headers, and a key travels in a header. Verified
+              against the real 73-character <code>OPENROUTER_API_KEY</code> from <code>.env</code>:
+            </p>
+            <div className="tblwrap"><table className="tbl">
+              <thead>
+                <tr>
+                  <th>check</th>
+                  <th>result</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>API key present in the saved trace</td>
+                  <td className="ok">0 occurrences</td>
+                </tr>
+                <tr>
+                  <td>
+                    any <code>authorization</code> field
+                  </td>
+                  <td className="ok">0</td>
+                </tr>
+                <tr>
+                  <td>
+                    any <code>sk-…</code> token
+                  </td>
+                  <td className="ok">0</td>
+                </tr>
+                <tr>
+                  <td>trace file permissions</td>
+                  <td>
+                    <code>-rw-------</code> (0600)
+                  </td>
+                </tr>
+                <tr>
+                  <td>PII in the prompt</td>
+                  <td>
+                    masked to <code>«email»</code> / <code>«phone»</code>
+                  </td>
+                </tr>
+              </tbody>
+            </table></div>
+
+            <h3 className="doc-h2">Redaction — three tiers, on by default</h3>
+            <div className="tblwrap"><table className="tbl">
+              <thead>
+                <tr>
+                  <th>tier</th>
+                  <th>covers</th>
+                  <th>removable</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="dim">Control characters</td>
+                  <td>
+                    ANSI escapes, <code>\r</code>, control bytes
+                  </td>
+                  <td className="bad">never</td>
+                </tr>
+                <tr>
+                  <td className="dim">Secrets</td>
+                  <td>
+                    provider keys (<code>sk-</code>, <code>sk-ant-</code>, <code>ya29.</code>,{" "}
+                    <code>xapp-</code>, <code>npm_</code>, <code>pypi-</code>,{" "}
+                    <code>sk-or-v1-</code>), PEM blocks, <code>Bearer</code>/<code>Basic</code>/
+                    <code>Digest</code> headers, <code>api_key:</code>/<code>secret=</code>/
+                    <code>password=</code> pairs
+                  </td>
+                  <td className="bad">never</td>
+                </tr>
+                <tr>
+                  <td className="dim">PII</td>
+                  <td>emails, phone numbers, card numbers</td>
+                  <td className="warn">
+                    yes, with <code>--no-redact</code>
+                  </td>
+                </tr>
+              </tbody>
+            </table></div>
+            <div className="note">
+              Redaction patterns are bounded (<code>{"{20,512}"}</code>,{" "}
+              <code>{"{8,4096}"}</code>) rather than greedy, because prompt length is entirely
+              user-controlled and an unbounded backtracking pattern here would be a CPU-exhaustion
+              vector (CWE-1333). Two tests hold the line: an absolute per-KB ceiling and a
+              hardware-independent ratio check that catches super-linear scaling on any machine.
+            </div>
+
+            <h3 className="doc-h2">Process, filesystem, network</h3>
+            <div className="tblwrap"><table className="tbl">
+              <tbody>
+                <tr>
+                  <td className="dim">process spawning</td>
+                  <td>
+                    <code>shell: false</code> everywhere; no <code>exec</code>,{" "}
+                    <code>execSync</code> or <code>shell: true</code> anywhere in{" "}
+                    <code>src/</code>. On Windows, <code>.cmd</code>/<code>.bat</code> targets are
+                    spawned through a manually quoted <code>cmd.exe</code> command line with{" "}
+                    <code>windowsVerbatimArguments</code>, so a path like{" "}
+                    <code>{"C:\my & agents\run.py"}</code> cannot be reinterpreted as shell
+                    syntax.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="dim">path traversal</td>
+                  <td>
+                    <code>--save-as</code> is sanitised to <code>[a-zA-Z0-9._-]</code>, so{" "}
+                    <code>--save-as ../../../tmp/pwned</code> cannot escape{" "}
+                    <code>.costcatch/</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="dim">clean</td>
+                  <td>
+                    targets come only from a listing jailed to <code>.costcatch/</code> that returns
+                    regular <code>.json</code> files, so a planted symlink is not followed;{" "}
+                    <code>pricing.json</code> is excluded by name.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="dim">writes</td>
+                  <td>
+                    serialised to a sibling temp file and renamed, mode <code>0600</code>. An
+                    interrupted run leaves either the old file or the new one, never a truncated
+                    document that <code>stats</code> and <code>diff</code> would skip forever.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="dim">reads</td>
+                  <td>
+                    every saved trace is treated as untrusted: fields are coerced with fallbacks,
+                    control characters are stripped on read, and a trace carrying a{" "}
+                    <code>__proto__</code> key does not pollute <code>Object.prototype</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="dim">network</td>
+                  <td>
+                    exactly two outbound requests, both HTTPS, both only from <code>init</code>,
+                    both optional, both with 10-second timeouts: LiteLLM&apos;s pricing JSON and
+                    OpenRouter&apos;s public model listing. No telemetry; no trace data leaves the
+                    machine.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="dim">dependencies</td>
+                  <td>
+                    five runtime dependencies, <code>npm audit --omit=dev</code> reports 0
+                    vulnerabilities. No LLM SDK, no HTTP client, no native modules.
+                  </td>
+                </tr>
+              </tbody>
+            </table></div>
+
+            <h3 className="doc-h2">Known advisories</h3>
+            <div className="note">
+              <b>--no-redact writes raw PII to disk indefinitely.</b>{" "}
+              <code>.costcatch/</code> is gitignored by <code>init</code> and <code>clean</code>{" "}
+              provides retention, but the flag produces plaintext PII in a file and prints no
+              on-screen warning that it did.
+            </div>
+          </section>
+
+          <section className="doc-sec" id="gates">
+            <h2 className="doc-h1">Gates</h2>
+            <p className="doc-p">
+              Three options, but only two kinds of promise. <code>--max-cost</code> and{" "}
+              <code>--max-calls</code> are checks on a run that has already finished — you still get
+              the full report, and then a framed notice gives you the comparison.{" "}
+              <code>--budget</code> is a limit on a run still in progress: it stops your program
+              outright the moment the total crosses the line.
+            </p>
+
+            <div className="tblwrap"><table className="tbl">
+              <thead>
+                <tr>
+                  <th>flag</th>
+                  <th>guarantee</th>
+                  <th>where it belongs</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <code>--max-cost</code>
+                  </td>
+                  <td>this run did not cost more than N — checked afterwards</td>
+                  <td className="dim">CI</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>--max-calls</code>
+                  </td>
+                  <td>this run did not get stuck in a loop — checked afterwards</td>
+                  <td className="dim">CI</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>--budget</code>
+                  </td>
+                  <td>
+                    this run <em>cannot</em> cost more than N — enforced as it goes
+                  </td>
+                  <td className="warn">
+                    your own machine, overnight jobs, agents you don&apos;t trust
+                  </td>
+                </tr>
+              </tbody>
+            </table></div>
+
+            <h3 className="doc-h2">--max-cost, passing</h3>
+            <Cap id="maxCostPass" note="--max-cost 0.50" />
+
+            <h3 className="doc-h2">--max-cost, failing</h3>
+            <Cap id="maxCostFail" note="--max-cost 0.000001" />
+
+            <div className="note">
+              <b>Gates fail closed.</b> If any call used a model costcatch cannot price, the run
+              total stays <code>null</code> and the cost gate <em>fails</em> rather than passing. A
+              gate that cannot be evaluated must never report success.
+            </div>
+
+            <h3 className="doc-h2">--max-calls · catch a loop that never ends</h3>
+            <p className="doc-p">
+              A cost limit misses one particular failure: a cheap model going round in circles
+              forever. Five calls where you expected two is a broken loop even when the money
+              involved is trivial.
+            </p>
+            <Cap id="maxCalls" note="--max-calls 2" />
+
+            <h3 className="doc-h2">--budget · stop the program mid-run</h3>
+            <p className="doc-p">
+              Notice what is different below. This agent normally makes four to six calls; this run
+              has two, and the notice appears <em>above</em> the report rather than below it,
+              because the run was stopped rather than finished.
+            </p>
+            <Cap id="budget" note="--budget 0.00005 · process killed" />
+          </section>
+
+          <section className="doc-sec" id="exits">
+            <h2 className="doc-h1">Exit codes</h2>
+            <p className="doc-p">
+              costcatch waits until the very end to set its exit code, so nothing it printed is
+              ever cut off partway down a pipe.
+            </p>
+            <div className="tblwrap"><table className="tbl">
+              <thead>
+                <tr>
+                  <th>code</th>
+                  <th>name</th>
+                  <th>when</th>
+                </tr>
+              </thead>
+              <tbody>
+                {EXITS.map(([code, name, when]) => (
+                  <tr key={code}>
+                    <td>
+                      <code className="money">{code}</code>
+                    </td>
+                    <td className="dim">{name}</td>
+                    <td>{when}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table></div>
+            <div className="note">
+              <b>That last row is the important one.</b> costcatch wraps your program, so a program
+              that fails must still fail. It replaces the exit code only when it has something of
+              its own to report.
+            </div>
+          </section>
+
+          <section className="doc-sec" id="limits">
+            <h2 className="doc-h1">Limitations</h2>
+            <p className="doc-p">
+              Stated plainly, because a tool that hides its edges wastes your time.
+            </p>
+            <div className="tblwrap"><table className="tbl">
+              <thead>
+                <tr>
+                  <th>limitation</th>
+                  <th>detail</th>
+                  <th>workaround</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Node and Python only</td>
+                  <td>
+                    bun and deno do not honour <code>--require</code>, so costcatch would attach and
+                    capture nothing. It refuses rather than pretending.
+                  </td>
+                  <td className="dim">
+                    run the script under <code>node</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>HTTP layer only</td>
+                  <td>An SDK using a transport other than the patched ones is invisible.</td>
+                  <td className="dim">the empty-trace message lists what is supported</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>estimate</code> is ±10%
+                  </td>
+                  <td>
+                    Character-ratio heuristics, not a real tokenizer; input cost only, not output.
+                  </td>
+                  <td className="dim">
+                    use <code>run</code> for exact spend
+                  </td>
+                </tr>
+                <tr>
+                  <td>Cost accuracy tracks the pricing table</td>
+                  <td>
+                    A model missing from LiteLLM and OpenRouter is unpriced, and the run total
+                    becomes <code>null</code>.
+                  </td>
+                  <td className="dim">
+                    <code>costcatch init</code> to refresh; gates fail closed meanwhile
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>stats</code> reads at most 2,000 traces
+                  </td>
+                  <td>Newest first, to keep the command fast as history grows.</td>
+                  <td className="dim">
+                    <code>clean</code> for retention
+                  </td>
+                </tr>
+                <tr>
+                  <td>Retry detection is a heuristic</td>
+                  <td>Identical prompts, whatever the reason.</td>
+                  <td className="dim">the wording reflects the uncertainty</td>
+                </tr>
+                <tr>
+                  <td>Local only</td>
+                  <td>No hosted dashboard, no team aggregation.</td>
+                  <td className="dim">
+                    <code>--json</code> on every read command feeds your own
+                  </td>
+                </tr>
+                <tr>
+                  <td>Not yet published to npm</td>
+                  <td>
+                    <code>release.yml</code> exists with provenance attestation; no tag has been
+                    pushed.
+                  </td>
+                  <td className="dim">install from source, or npm link</td>
+                </tr>
+              </tbody>
+            </table></div>
+          </section>
+
+          <section className="doc-sec" id="trace">
+            <h2 className="doc-h1">Trace format</h2>
+            <p className="doc-p">
+              Saved runs are plain JSON files in <code>.costcatch/</code>, named{" "}
+              <code>&lt;runId&gt;-&lt;script&gt;.json</code> — or <code>&lt;name&gt;.json</code> if
+              you used <code>--save-as</code>. They are written so that only your own user account
+              can read them.
+            </p>
+            <Cap id="traceFile" note="annotated" />
+
+            <h3 className="doc-h2">The fields worth knowing</h3>
+            <div className="tblwrap"><table className="tbl">
+              <tbody>
+                {TRACE_FIELDS.map(([field, body]) => (
+                  <tr key={field}>
+                    <td>
+                      <code className="tok">{field}</code>
+                    </td>
+                    <td>{body}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table></div>
+            <div className="note">
+              Providers disagree about what &quot;input tokens&quot; means: Anthropic leaves cached
+              ones out of the number, OpenAI includes them. costcatch fixes that up as each response
+              arrives, so inside a saved file <code>inputTokens</code> is always the full total and{" "}
+              <code>cachedTokens</code> is always a part of it.
+            </div>
+          </section>
+
+          <section className="doc-sec" id="warnings">
+            <h2 className="doc-h1">Warning engine</h2>
+            <p className="doc-p">
+              Six checks, nothing to set up. They run on every saved run and stay quiet when there
+              is nothing worth saying.
+            </p>
+            <div className="tblwrap"><table className="tbl">
+              <thead>
+                <tr>
+                  <th>code</th>
+                  <th>severity</th>
+                  <th>fires when</th>
+                </tr>
+              </thead>
+              <tbody>
+                {WARNINGS.map(([code, sev, body]) => (
+                  <tr key={code}>
+                    <td>
+                      <code className="warn">{code}</code>
+                    </td>
+                    <td className="dim">{sev}</td>
+                    <td>{body}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table></div>
+            <div className="note">
+              <b>&quot;Slow&quot; is worked out from the run itself.</b> Each call is compared to
+              the middle of the <em>other</em>{" "}
+              calls rather than to a fixed number of seconds, so a model that is slow the whole way
+              through triggers nothing at all. Leaving the call itself out of that middle matters,
+              because otherwise a hang would hide itself: one 60s call next to one 2s call averages
+              out to 31s, and 60 is less than 31 × 2.5. Failed calls are left out too, so a burst of
+              fast rate-limit errors cannot drag the number down towards zero.
+            </div>
+          </section>
+
+          <section className="doc-sec" id="errors">
+            <h2 className="doc-h1">Error paths</h2>
+            <p className="doc-p">
+              A good error message is a feature. Each of these says what was tried, what the rule
+              is, and what to do instead.
+            </p>
+
+            <h3 className="doc-h2">An unsupported runtime</h3>
+            <Cap id="errRuntime" />
+            <p className="doc-p">
+              bun and deno are refused <em>on purpose</em>. Neither supports the hook costcatch
+              needs, so it would attach itself and then record nothing at all — and quietly
+              recording nothing is worse than refusing to start.
+            </p>
+
+            <h3 className="doc-h2">A mistyped provider name</h3>
+            <Cap id="errFilter" />
+            <p className="doc-p">
+              A mistyped <code>--filter</code>{" "}
+              would otherwise hide every call and report a perfectly believable empty run — which
+              reads as &quot;my agent never called a model&quot;. Checking the name against the
+              real list turns a quiet wrong answer into a loud one.
+            </p>
+
+            <h3 className="doc-h2">No calls captured</h3>
+            <Cap id="errNoCalls" />
+
+            <h3 className="doc-h2">Filtered to a provider that was not called</h3>
+            <Cap id="errFilterUnused" />
+            <p className="doc-p">
+              The filter is applied while the run is being recorded, so at this point costcatch
+              genuinely does not know whether other providers were called. Saying &quot;no calls
+              found&quot; would be a lie; saying &quot;calls were hidden&quot; would be a guess. So
+              it says what the option does, and tells you how to find out.
+            </p>
+          </section>
         </div>
       </div>
     </div>
