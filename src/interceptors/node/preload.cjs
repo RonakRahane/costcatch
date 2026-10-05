@@ -798,15 +798,10 @@ function parseSSEResponse(body) {
 
     if (parsed.type === "message_start" && parsed.message) {
       if (parsed.message.model) model = parsed.message.model;
-      if (parsed.message.usage) {
-        usage = usage || {};
-        usage.input_tokens = parsed.message.usage.input_tokens;
-        if (parsed.message.usage.cache_read_input_tokens != null) {
-          usage.cache_read_input_tokens = parsed.message.usage.cache_read_input_tokens;
-        }
-        if (parsed.message.usage.cache_creation_input_tokens != null) {
-          usage.cache_creation_input_tokens = parsed.message.usage.cache_creation_input_tokens;
-        }
+      if (parsed.message.usage && typeof parsed.message.usage === "object") {
+        // Keep everything but the output placeholder: the cache-write split, region and tier are only sent here.
+        const { output_tokens, output_tokens_details, ...startUsage } = parsed.message.usage;
+        usage = mergeUsage(usage, startUsage);
       }
     }
     if (parsed.type === "content_block_start" && parsed.content_block && parsed.content_block.type === "tool_use") {

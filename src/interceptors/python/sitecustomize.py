@@ -356,13 +356,11 @@ if TRACE_OUTPUT and not _ALREADY_INSTALLED:
                 msg = parsed.get("message") or {}
                 if msg.get("model"):
                     model = msg["model"]
-                msg_usage = msg.get("usage") or {}
-                if msg_usage:
-                    usage = usage or {}
-                    usage["input_tokens"] = msg_usage.get("input_tokens")
-                    for field in ("cache_read_input_tokens", "cache_creation_input_tokens"):
-                        if msg_usage.get(field) is not None:
-                            usage[field] = msg_usage[field]
+                msg_usage = msg.get("usage")
+                if isinstance(msg_usage, dict) and msg_usage:
+                    # Keep everything but the output placeholder: the cache-write split, region and tier are only sent here.
+                    start_usage = {k: v for k, v in msg_usage.items() if k not in ("output_tokens", "output_tokens_details")}
+                    usage = _merge_usage(usage, start_usage)
             elif msg_type == "content_block_start":
                 block = parsed.get("content_block") or {}
                 if block.get("type") == "tool_use":
