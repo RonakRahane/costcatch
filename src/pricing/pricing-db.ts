@@ -74,6 +74,8 @@ export type PricingSource = "cache" | "bundled";
 
 interface PricingIndex {
   byName: Map<string, ModelPricing>;
+  // Names that hosts list at different prices, with no listing of the bare name itself.
+  disputed: Set<string>;
   // Longest first, which the prefix fallback relies on.
   sortedKeys: string[];
   source: PricingSource;
@@ -197,6 +199,32 @@ function readCache(): { data: Record<string, unknown>; mtimeMs: number } | null 
   }
 }
 
+// A bare name like "mistral-large" can mean different models at different prices on different hosts.
+// Maps each name after the last slash to its one price, or to null when hosts disagree. Each host
+// counts once, at its shortest listing, so regional variants like azure/us/... aren't another host.
+export function pricesByBareName(entries: Iterable<[string, unknown]>): Map<string, string | null> {
+  const listings = new Map<string, Map<string, { depth: number; price: string | null }>>();
+  for (const [key, entry] of entries) {
+    const lower = key.toLowerCase();
+    const name = lower.slice(lower.lastIndexOf("/") + 1);
+    const host = lower.includes("/") ? lower.slice(0, lower.indexOf("/")) : "";
+    const depth = lower.split("/").length;
+    const e = entry as Record<string, unknown> | null;
+    const price = e && typeof e === "object" ? `${e.input_cost_per_token}/${e.output_cost_per_token}` : null;
+    const hosts = listings.get(name) ?? new Map<string, { depth: number; price: string | null }>();
+    listings.set(name, hosts);
+    const seen = hosts.get(host);
+    if (!seen || depth < seen.depth) hosts.set(host, { depth, price });
+    else if (depth === seen.depth && seen.price !== price) seen.price = null;
+  }
+  const prices = new Map<string, string | null>();
+  for (const [name, hosts] of listings) {
+    const distinct = new Set([...hosts.values()].map((h) => h.price));
+    prices.set(name, distinct.size === 1 ? [...distinct][0] : null);
+  }
+  return prices;
+}
+
 function buildIndex(): PricingIndex {
   if (index) return index;
 
@@ -208,6 +236,7 @@ function buildIndex(): PricingIndex {
   };
 
   const byName = new Map<string, ModelPricing>();
+  const bareNames = pricesByBareName(Object.entries(raw));
   for (const [model, entry] of Object.entries(raw)) {
     const pricing = readEntry(entry);
     if (!pricing) continue;
@@ -215,13 +244,17 @@ function buildIndex(): PricingIndex {
     const key = model.toLowerCase();
     byName.set(key, pricing);
 
-    // Also index the name without its provider prefix, but never over a real key.
+    // Also index the name without its provider prefix, but never over a real key, and only
+    // when every host lists that name at one price.
     const stripped = normalizeModel(model);
-    if (stripped !== key && !byName.has(stripped)) byName.set(stripped, pricing);
+    const name = stripped.slice(stripped.lastIndexOf("/") + 1);
+    if (stripped !== key && !byName.has(stripped) && bareNames.get(name) != null) byName.set(stripped, pricing);
   }
+  const disputed = new Set([...bareNames].filter(([name, price]) => price === null && !byName.has(name)).map(([name]) => name));
 
   index = {
     byName,
+    disputed,
     sortedKeys: [...byName.keys()].sort((a, b) => b.length - a.length || (a < b ? -1 : 1)),
     source: cache ? "cache" : "bundled",
     loadedAtMs: cache ? cache.mtimeMs : null,
@@ -249,6 +282,8 @@ export function getModelPricing(model: string, namespace?: string): ModelPricing
   const normalized = normalizeModel(model);
   const normalizedHit = db.byName.get(normalized);
   if (normalizedHit) return normalizedHit;
+  // Falling through would price it as a release of a shorter name, which is another guess.
+  if (db.disputed.has(normalized)) return null;
 
   for (const variant of suffixVariants(normalized)) {
     const hit = db.byName.get(variant);
@@ -271,7 +306,8 @@ export function getModelPricing(model: string, namespace?: string): ModelPricing
       key.startsWith(normalized) &&
       RELEASE_SUFFIX_ONLY.test(key.slice(normalized.length)),
   );
-  if (dated.length === 1) return db.byName.get(dated[0])!;
+  // -latest moves to each new release, so it doesn't say which one a family name means.
+  if (dated.length === 1 && !dated[0].endsWith("-latest")) return db.byName.get(dated[0])!;
 
   return null;
 }
