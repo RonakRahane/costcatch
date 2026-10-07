@@ -1,6 +1,6 @@
 // Fetches LiteLLM and OpenRouter prices into the user's pricing cache.
 
-import { savePricingCache, PRICE_KEY, PRICE_EXTRAS } from "./pricing-db.js";
+import { savePricingCache, pricesByBareName, PRICE_KEY, PRICE_EXTRAS } from "./pricing-db.js";
 
 const LITELLM_PRICING_URL =
   "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json";
@@ -70,17 +70,6 @@ async function fetchOpenRouter(): Promise<Record<string, Record<string, number>>
         input_cost_per_token: promptCost,
         output_cost_per_token: completionCost,
       };
-
-      const slashIdx = id.lastIndexOf("/");
-      if (slashIdx > 0) {
-        const bare = id.slice(slashIdx + 1);
-        if (!pricingData[bare]) {
-          pricingData[bare] = {
-            input_cost_per_token: promptCost,
-            output_cost_per_token: completionCost,
-          };
-        }
-      }
     }
     return pricingData;
   } catch {
@@ -103,6 +92,15 @@ export async function fetchLatestPricing(): Promise<FetchPricingResult> {
   const merged: Record<string, Record<string, unknown>> = { ...(litellm ?? {}) };
   for (const [key, value] of Object.entries(openrouter ?? {})) {
     if (key.startsWith("openrouter/") || !(key in merged)) merged[key] = value;
+  }
+
+  // Add OpenRouter's names without their vendor prefix, such as "mistral-large" for
+  // "mistralai/mistral-large", but only where every host lists that name at one price.
+  // OpenRouter's own price counts as a listing even where LiteLLM's row won the key.
+  const bareNames = pricesByBareName([...Object.entries(merged), ...Object.entries(openrouter ?? {})]);
+  for (const id of Object.keys(openrouter ?? {})) {
+    const bare = id.slice(id.lastIndexOf("/") + 1);
+    if (bare !== id && !(bare in merged) && bareNames.get(bare.toLowerCase()) != null) merged[bare] = merged[id];
   }
 
   return savePricingCache(merged) ? "saved" : "unwritable";
