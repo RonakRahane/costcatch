@@ -87,6 +87,10 @@ export interface RunResult {
   trace: Trace;
   exitCode: number;
   budgetExceeded: boolean;
+  // --budget stopped the run because a call's cost couldn't be counted, not because spend passed it.
+  budgetUnpriced?: boolean;
+  // --budget found the program still running and stopped it. False when it had already exited.
+  budgetStopped?: boolean;
   // The tracer has already printed why the program didn't start.
   failedToStart: boolean;
   // The capture hit COSTCATCH_MAX_TRACE_BYTES, so later calls are missing from the trace.
@@ -185,6 +189,10 @@ function createLiveAccumulator(ctx: RunContext) {
       ingest(calls);
       return cost;
     },
+    // A call that may have been billed but has no price, so --budget can't count it.
+    hasUnpriced(): boolean {
+      return hasUnknown;
+    },
     state(calls: RawHttpCall[], inflight: InflightCall[], startedAtMs: number): LiveState {
       ingest(calls);
       return {
@@ -211,7 +219,9 @@ function createLiveAccumulator(ctx: RunContext) {
   };
 }
 
-function terminateForBudget(handle: SpawnHandle): void {
+// Returns false when the program had already exited, so there was nothing to stop.
+function terminateForBudget(handle: SpawnHandle): boolean {
+  if (handle.child.exitCode !== null || (handle.child.signalCode ?? null) !== null) return false;
   try {
     handle.child.kill("SIGTERM");
   } catch {}
@@ -221,6 +231,7 @@ function terminateForBudget(handle: SpawnHandle): void {
     } catch {}
   }, 5_000);
   kill.unref?.();
+  return true;
 }
 
 export interface LiveOptions {
@@ -265,6 +276,8 @@ export async function runLive(handle: SpawnHandle, ctx: RunContext, opts: LiveOp
   // turbo's pane repaints only once a second, too slow for the header animation, so skip it there.
   let tick = anchored ? REVEAL_TICKS : 0;
   let budgetExceeded = false;
+  let budgetUnpriced = false;
+  let budgetStopped = false;
   let shown = false;
   let finished = false;
   let size = terminalSize();
@@ -359,9 +372,13 @@ export async function runLive(handle: SpawnHandle, ctx: RunContext, opts: LiveOp
       }
     }
     closeOrphans(Date.now());
-    if (!budgetExceeded && ctx.budgetUsd !== undefined && live.cost(completedCalls) > ctx.budgetUsd) {
-      budgetExceeded = true;
-      terminateForBudget(handle);
+    if (!budgetExceeded && ctx.budgetUsd !== undefined) {
+      const over = live.cost(completedCalls) > ctx.budgetUsd;
+      if (over || live.hasUnpriced()) {
+        budgetExceeded = true;
+        budgetUnpriced = !over;
+        budgetStopped = terminateForBudget(handle);
+      }
     }
   }
 
@@ -504,7 +521,7 @@ export async function runLive(handle: SpawnHandle, ctx: RunContext, opts: LiveOp
     // finalize reads everything again
   }
 
-  return { ...finalize(handle, ctx, exitCode, budgetExceeded, exited), exitCode, budgetExceeded, failedToStart: handle.failedToStart() };
+  return { ...finalize(handle, ctx, exitCode, budgetExceeded, exited), exitCode, budgetExceeded, budgetUnpriced, budgetStopped, failedToStart: handle.failedToStart() };
 }
 
 // childToStderr keeps stdout clean for JSON. It needs a handle spawned with pipeChildOutput.
@@ -517,6 +534,8 @@ export async function runPlain(
   const completedCalls: RawHttpCall[] = [];
   const live = createLiveAccumulator(ctx);
   let budgetExceeded = false;
+  let budgetUnpriced = false;
+  let budgetStopped = false;
 
   if (opts.childToStderr) {
     handle.child.stdout?.on("data", (chunk) => process.stderr.write(chunk));
@@ -537,9 +556,13 @@ export async function runPlain(
       for (const s of added) process.stderr.write(progressLine(s, ctx.showCost));
       for (const f of failedTools) process.stderr.write(toolFailureLine(f));
     }
-    if (!budgetExceeded && ctx.budgetUsd !== undefined && live.cost(completedCalls) > ctx.budgetUsd) {
-      budgetExceeded = true;
-      terminateForBudget(handle);
+    if (!budgetExceeded && ctx.budgetUsd !== undefined) {
+      const over = live.cost(completedCalls) > ctx.budgetUsd;
+      if (over || live.hasUnpriced()) {
+        budgetExceeded = true;
+        budgetUnpriced = !over;
+        budgetStopped = terminateForBudget(handle);
+      }
     }
   };
 
@@ -567,7 +590,7 @@ export async function runPlain(
     // finalize reads everything again
   }
 
-  return { ...finalize(handle, ctx, exitCode, budgetExceeded), exitCode, budgetExceeded, failedToStart: handle.failedToStart() };
+  return { ...finalize(handle, ctx, exitCode, budgetExceeded), exitCode, budgetExceeded, budgetUnpriced, budgetStopped, failedToStart: handle.failedToStart() };
 }
 
 function progressLine(s: LLMStep, showCost: boolean): string {
