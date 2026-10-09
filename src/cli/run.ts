@@ -124,8 +124,28 @@ export async function runCommand(userCommand: string[], flags: RunFlags): Promis
 
   const { trace, exitCode, budgetExceeded, captureLimited } = result;
 
-  if (budgetExceeded) {
+  if (budgetExceeded && result.budgetUnpriced) {
+    const unpriced = trace.steps.filter((s): s is LLMStep => s.type === "llm" && isUnpricedCall(s));
+    const models = [...new Set(unpriced.map((s) => s.model))].join(", ") || "a call";
+    const noUsage = unpriced.some((s) => s.inputTokens === null || s.outputTokens === null);
+    console.error(
+      notice("err", `BUDGET: --budget can't be enforced, the cost of ${models} is unknown.`, [
+        result.budgetStopped
+          ? "costcatch stopped the program, since that spend can't be counted."
+          : "The program had already exited when costcatch read that call.",
+        noUsage
+          ? "A call came back without token usage. A streamed call reports usage only when the request asks for it."
+          : "Run `costcatch init` to download current prices, or leave out --budget for a model with no public price.",
+      ]),
+    );
+  } else if (budgetExceeded && result.budgetStopped) {
     console.error(notice("err", `BUDGET: run stopped, spend passed --budget ${formatCost(flags.budget ?? 0)}`));
+  } else if (budgetExceeded) {
+    console.error(
+      notice("err", `BUDGET: spend passed --budget ${formatCost(flags.budget ?? 0)}`, [
+        "The program had already exited when costcatch read the calls that passed it.",
+      ]),
+    );
   }
   if (captureLimited) {
     console.error(

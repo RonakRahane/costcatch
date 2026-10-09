@@ -70,7 +70,7 @@ function withSharedTraceOptions(cmd: Command): Command {
       "CI gate: non-zero exit if failed LLM calls plus failed tool calls exceed N",
       numberOption("--max-errors", 0, { integer: true }),
     )
-    .option("--budget <usd>", "Mid-run guard: terminate the program once spend exceeds N USD", numberOption("--budget", 0));
+    .option("--budget <usd>", "Mid-run guard: terminate the program once spend exceeds N USD, or a call can't be priced", numberOption("--budget", 0));
 }
 
 function withTraceOptions(cmd: Command): Command {
