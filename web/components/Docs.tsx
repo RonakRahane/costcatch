@@ -95,7 +95,7 @@ const FLAGS: [string, string][] = [
   ["--threshold <ms>", "Say what counts as slow yourself, instead of letting costcatch work it out from the run"],
   ["--max-cost <usd>", "After the run: fail if it cost more than this"],
   ["--max-calls <n>", "After the run: fail if it made more calls than this"],
-  ["--budget <usd>", "While it runs: stop the program the moment spend passes this"],
+  ["--budget <usd>", "While it runs: stop the program once spend passes this, or a call can't be priced"],
 ];
 
 const EXITS: [string, string, string][] = [
@@ -981,7 +981,7 @@ export default function Docs() {
               <code>--max-calls</code> are checks on a run that has already finished — you still get
               the full report, and then a framed notice gives you the comparison.{" "}
               <code>--budget</code> is a limit on a run still in progress: it stops your program
-              outright the moment the total crosses the line.
+              as soon as a finished call takes the total over the line, or can&apos;t be priced.
             </p>
 
             <div className="tblwrap"><table className="tbl">
@@ -1012,7 +1012,7 @@ export default function Docs() {
                     <code>--budget</code>
                   </td>
                   <td>
-                    this run <em>cannot</em> cost more than N — enforced as it goes
+                    stopped once its spend passes N — calls already sent still finish and bill
                   </td>
                   <td className="warn">
                     your own machine, overnight jobs, agents you don&apos;t trust
