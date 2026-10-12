@@ -1,0 +1,47 @@
+name: Provider or model support
+description: costcatch missed a provider's calls, or priced a model as unknown
+labels: [provider]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is missing
+      options:
+        - Calls to this provider are not captured at all
+        - Calls are captured but the model shows as unknown
+        - Calls are captured but the cost shows as $?.??
+        - Token counts are wrong or missing
+    validations:
+      required: true
+
+  - type: input
+    id: provider
+    attributes:
+      label: Provider
+      placeholder: "Together.ai / Fireworks / vLLM / Bedrock"
+    validations:
+      required: true
+
+  - type: input
+    id: endpoint
+    attributes:
+      label: Endpoint URL
+      description: The URL shape, with any account identifiers removed.
+      placeholder: "https://api.example.com/v1/chat/completions"
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Model identifier
+      description: Exactly as the API reports it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: shape
+    attributes:
+      label: Response shape
+      description: Where usage lives in the response. Redact any content.
+      render: json
