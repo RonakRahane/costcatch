@@ -19,12 +19,3 @@ __pycache__/
 .DS_Store
 Thumbs.db
 *.swp
-
-archive/
-TEST-REPORT.md
-evals/RESULTS.md
-lines-of-code.md
-evals/work/
-
-demo_scripts/
-scripts/
