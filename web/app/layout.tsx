@@ -12,6 +12,9 @@ const mono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "costcatch — see what your AI agent did and what it cost",
+  icons: {
+    icon: "/costcatch-logo.jpeg",
+  },
   description:
     "Put costcatch in front of the command that runs your agent. See every LLM call it makes, what each call cost, and what went wrong. No code changes. Runs on your machine.",
   keywords: [

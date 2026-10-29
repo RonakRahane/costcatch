@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 
 // Copied from the hero run in data/site-captures.ts, so update them together.
 const FEED = [
@@ -12,14 +11,7 @@ const FEED = [
   "1 failed LLM call · 3 failed tool calls",
 ];
 
-const TABS: { href: string; label: string; external?: boolean }[] = [
-  { href: "/docs", label: "Docs" },
-  { href: "/demo", label: "Demo" },
-  { href: "https://github.com/RonakRahane/costcatch", label: "GitHub", external: true },
-];
-
 export default function SiteNav() {
-  const pathname = usePathname();
   const [text, setText] = useState(FEED[0]);
 
   const msg = useRef(0);
@@ -99,33 +91,6 @@ export default function SiteNav() {
             </span>
           </Link>
 
-          <nav className="nav-tabs" aria-label="Sections">
-            {TABS.map((t) =>
-              t.external ? (
-                <a
-                  key={t.label}
-                  className="tab-link"
-                  href={t.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {t.label}
-                  <span className="arr" aria-hidden>
-                    ↗
-                  </span>
-                </a>
-              ) : (
-                <Link
-                  key={t.label}
-                  className={`tab-link${pathname === t.href ? " on" : ""}`}
-                  href={t.href}
-                  aria-current={pathname === t.href ? "page" : undefined}
-                >
-                  {t.label}
-                </Link>
-              )
-            )}
-          </nav>
         </div>
       </div>
     </>

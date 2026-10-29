@@ -62,6 +62,9 @@ export default function Hero() {
                       {copied ? "copied" : "copy"}
                     </span>
                   </button>
+                  <Link className="btn" href="/demo">
+                    Demo
+                  </Link>
                   <Link className="btn" href="/docs">
                     Docs
                   </Link>
