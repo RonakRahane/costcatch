@@ -1015,7 +1015,7 @@ h1, h2, h3, h4, p, figure { margin: 0; }
   background: var(--sunken);
   overflow: hidden;
 }
-.splash-col { padding: 26px 20px 20px; }
+.splash-col { min-width: 0; padding: 26px 20px 20px; }
 .splash-col + .splash-col { border-left: 1px solid var(--rail); }
 .splash-col h4 {
   font-size: 9px;
@@ -1102,9 +1102,7 @@ h1, h2, h3, h4, p, figure { margin: 0; }
   .nf-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .console-grid { grid-template-columns: 178px minmax(0, 1fr); }
   .docs-grid { grid-template-columns: 200px minmax(0, 1fr); }
-}
 
-@media (max-width: 860px) {
   :root { --gut: 18px; --index: 0px; }
 
   .plate { grid-template-columns: minmax(0, 1fr); }

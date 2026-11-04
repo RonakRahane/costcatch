@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -36,6 +36,11 @@ export const metadata: Metadata = {
       "Every LLM call your agent makes, what it cost, and what went wrong. One command, no code changes, nothing leaves your machine.",
     type: "website",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
