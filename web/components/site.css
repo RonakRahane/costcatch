@@ -979,7 +979,13 @@ h1, h2, h3, h4, p, figure { margin: 0; }
 }
 .doc-usage .p { color: var(--cost); }
 
-.capture { margin-top: 20px; }
+.capture {
+  margin-top: 20px;
+  font-family: var(--font-terminal), ui-monospace, monospace;
+  font-feature-settings: normal;
+}
+.capture code,
+.capture pre { font-family: inherit; }
 .capture-head {
   display: flex;
   align-items: center;

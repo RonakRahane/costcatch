@@ -1,5 +1,17 @@
+import localFont from "next/font/local";
+
 // Shows a terminal capture as printed and colours it here, so the capture strings stay plain text.
 // Box alignment depends on every space, so the output must never reflow.
+
+// IBM Plex Mono's web subset does not include the box-drawing glyphs used by the
+// captures. PT Mono does, so loading it here prevents a browser-specific fallback
+// font from shifting individual lines out of alignment.
+const terminal = localFont({
+  src: "../app/fonts/PTMono-Regular.ttf",
+  variable: "--font-terminal",
+  display: "swap",
+  weight: "400",
+});
 
 type Severity = "critical" | "warn" | "info";
 
@@ -11,6 +23,12 @@ const TOKENS =
 // Matches a warning row inside a box, like "│ ● message   │".
 const WARNING = /^(│ )(● .*?)(\s*│)$/;
 
+// These glyphs are not in PT Mono. Keep each replacement one character wide,
+// which preserves the original terminal column positions without using a fallback font.
+function terminalText(text: string) {
+  return text.replaceAll("✓", "+").replaceAll("✗", "×").replaceAll("▸", ">");
+}
+
 function paint(line: string, key: number) {
   // Block characters are either a cost bar or the init banner's wordmark.
   // Only bar lines also show a dollar amount, so that tells them apart.
@@ -21,7 +39,7 @@ function paint(line: string, key: number) {
 
   for (const m of line.matchAll(TOKENS)) {
     const at = m.index ?? 0;
-    if (at > last) out.push(line.slice(last, at));
+    if (at > last) out.push(terminalText(line.slice(last, at)));
 
     const [text, caution, retry, failed, http, ok, bad, money, flag, sev, bar, box, comment] = m;
     const cls =
@@ -53,13 +71,13 @@ function paint(line: string, key: number) {
 
     out.push(
       <span className={cls} key={`${key}-${i++}`}>
-        {text}
+        {terminalText(text)}
       </span>
     );
     last = at + text.length;
   }
 
-  if (last < line.length) out.push(line.slice(last));
+  if (last < line.length) out.push(terminalText(line.slice(last)));
   return out;
 }
 
@@ -89,7 +107,7 @@ export default function Verbatim({
   }
 
   return (
-    <figure className="capture">
+    <figure className={`capture ${terminal.variable}`}>
       <div className="capture-head">
         <span>captured output</span>
         {note ? <span className="dim">{note}</span> : null}
@@ -111,9 +129,9 @@ export default function Verbatim({
               <span key={i}>
                 {row && cls ? (
                   <>
-                    <span className="c-box">{row[1].trimEnd()}</span>{" "}
-                    <span className={cls}>{row[2]}</span>
-                    {row[3].slice(0, -1)}
+                    <span className="c-box">{terminalText(row[1].trimEnd())}</span>{" "}
+                    <span className={cls}>{terminalText(row[2])}</span>
+                    {terminalText(row[3].slice(0, -1))}
                     <span className="c-box">│</span>
                   </>
                 ) : (
