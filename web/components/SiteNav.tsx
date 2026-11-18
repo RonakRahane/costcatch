@@ -68,7 +68,7 @@ export default function SiteNav() {
           <span className="sig" aria-hidden />
           <span className="wide-only">free · open source · runs on your machine</span>
           <span className="narrow-only">free · open source</span>
-          <span>MIT · npm v0.1.0</span>
+          <span>MIT · npm v0.2.0</span>
         </div>
       </div>
 
