@@ -73,9 +73,10 @@ function sh(command, extraEnv = {}) {
     const child = spawn("bash", ["-c", command], { cwd: PROJECT, env: { ...env, ...extraEnv }, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
-    child.stdout.on("data", (d) => (stdout += d));
-    child.stderr.on("data", (d) => (stderr += d));
-    child.on("close", (code) => resolve({ command, exitCode: code ?? 1, stdout, stderr }));
+    let combined = "";
+    child.stdout.on("data", (d) => { stdout += d; combined += d; });
+    child.stderr.on("data", (d) => { stderr += d; combined += d; });
+    child.on("close", (code) => resolve({ command, exitCode: code ?? 1, stdout, stderr, combined }));
   });
 }
 
@@ -126,7 +127,7 @@ async function capture(id, command, { keep = "stdout", expectExit, extraEnv } = 
   if (expectExit !== undefined && run.exitCode !== expectExit) {
     fail(`"${command}" exited ${run.exitCode}, expected ${expectExit}\n${run.stdout}\n${run.stderr}`);
   }
-  const output = keep === "lastBoxes" ? lastBoxes(run.stderr) : tidy(run.stdout);
+  const output = keep === "lastBoxes" ? lastBoxes(run.stderr) : tidy(keep === "combined" ? run.combined : run.stdout);
   captures[id] = { command, output, exitCode: run.exitCode };
 }
 
@@ -145,6 +146,7 @@ env.DEMO_API_URL = await new Promise((resolve, reject) => {
 try {
   console.log(`captures: running in ${PROJECT}`);
   await capture("init", OFFLINE ? "costcatch init --offline" : "costcatch init", {
+    keep: "combined",
     expectExit: 0,
     extraEnv: { COSTCATCH_HOME: INIT_HOME },
   });

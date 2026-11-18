@@ -41,13 +41,14 @@ export const SITE_CAPTURES = {
 │                                │                                                     │
 └────────────────────────────────┴─────────────────────────────────────────────────────┘
 
+- fetching latest model pricing…
 
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
 │ costcatch                                                                               init │
 │                                                                                              │
 │ ✓ created .costcatch/ (~/oncall-agent/.costcatch)                                            │
 │ ✓ added .costcatch/ to .gitignore                                                            │
-│ ✓ fetched latest pricing (5,511 models)                                                      │
+│ ✓ fetched latest pricing (5,831 models)                                                      │
 │                                                                                              │
 │ ready · run \`costcatch --help\` to see all commands                                           │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘`,
@@ -59,7 +60,7 @@ export const SITE_CAPTURES = {
 │ costcatch                                          claude-sonnet-4-20250514  ·  18.0s  $0.08 │
 │                                                                                              │
 │ ✓ Step 1   2.1s    537 tok in →  96 tok out  $0.00305  ▓░░░░                                 │
-│    ├─ ▸ read_file(path="logs/checkout.log")  → ~5.2k tok                                     │
+│    ├─ ▸ read_file(path="logs/checkout.log")  → ~7.2k tok                                     │
 │    └─ ✗ get_ticket(id="INC-2041")                                                            │
 │         failed: TicketAPIError: ticket INC-2041 not found                                    │
 │                                                                                              │
@@ -68,7 +69,7 @@ export const SITE_CAPTURES = {
 │         failed: TicketAPIError: ticket INC-2041 not found                                    │
 │    ∆ context grew 11.3× (537 → 6,061 input tok)                                              │
 │                                                                                              │
-│ ✗ Step 3  283ms  HTTP 429                                                                    │
+│ ✗ Step 3  286ms  HTTP 429                                                                    │
 │    └─ rate_limit_error Number of request tokens has exceeded your per-minute rate limit      │
 │                                                                                              │
 │ ✓ Step 4   3.0s  6,135 tok in →  41 tok out     $0.02  ████░                                 │
@@ -76,7 +77,7 @@ export const SITE_CAPTURES = {
 │    └─ ✗ get_ticket(id="INC-2041")                                                            │
 │         failed: TicketAPIError: ticket INC-2041 not found                                    │
 │                                                                                              │
-│ ✓ Step 5   4.7s  6,210 tok in → 300 tok out     $0.02  █████                                 │
+│ ∆ Step 5   4.7s  6,210 tok in → 300 tok out     $0.02  █████                                 │
 │    ∆ output cut off (max_tokens): the answer is incomplete                                   │
 │                                                                                              │
 │ ✓ Step 6   2.3s  6,373 tok in →  74 tok out     $0.02  ████░                                 │
@@ -96,13 +97,13 @@ export const SITE_CAPTURES = {
 │ ● Context grew 12× across calls (537 → 6,373 tokens)                                         │
 │ ● Step 6 asked for submit(); the program exited with code 1 before sending its result back … │
 │ ● Step 5 was cut off (max_tokens): the answer is incomplete                                  │
-│ ● Step 1: read_file() returned ~5.2k tokens, 86% of step 2's prompt, sent 5 times            │
+│ ● Step 1: read_file() returned ~7.2k tokens, 100% of step 2's prompt, sent 5 times           │
 │ ● Step 4 retried step 3 (which failed), same prompt re-sent                                  │
 │ ● Context grew 11.3× between steps 1 and 2 (537 → 6,061)                                     │
-│ run 2026-10-20T17-54-27                                                                      │
+│ run 2026-11-18T09-09-15                                                                      │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
 
-  ✓ Trace saved: ~/oncall-agent/.costcatch/2026-10-20T17-54-27-research_agent.json`,
+  ✓ Trace saved: ~/oncall-agent/.costcatch/2026-11-18T09-09-15-research_agent.json`,
     exitCode: 1,
   },
   show: {
@@ -112,7 +113,9 @@ export const SITE_CAPTURES = {
 │ show: research_agent.py (6 LLM calls)                                                        │
 │                                                                                              │
 │ ── ✓ Step 1 claude-sonnet-4-20250…  2.1s  537 tok in → 96 tok out  $0.00305                  │
-│   next LLM call 693ms after this one ended (your code and tools)                             │
+│   next LLM call 679ms after this one ended (your code and tools)                             │
+│   provider usage {"input_tokens":537,"output_tokens":96,"cache_creation_input_tokens":0,     │
+│                  "cache_read_input_tokens":0}                                                │
 │                                                                                              │
 │ SYSTEM                                                                                       │
 │   You are an on-call assistant. Use the tools to answer. Never guess.                        │
@@ -127,10 +130,10 @@ export const SITE_CAPTURES = {
 │                                                                                              │
 │ TOOL CALLS                                                                                   │
 │   ▸ read_file({"path":"logs/checkout.log"})                                                  │
-│     result ~5.2k tok (18,664 chars), sent in 5 requests                                      │
+│     result ~7.2k tok (18,664 chars), sent in 5 requests                                      │
 │   ✗ get_ticket({"id":"INC-2041"})                                                            │
 │     failed: TicketAPIError: ticket INC-2041 not found                                        │
-│ 2026-10-20T17-54-27                                                                          │
+│ 2026-11-18T09-09-15                                                                          │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘`,
     exitCode: 0,
   },
@@ -166,12 +169,12 @@ export const SITE_CAPTURES = {
 │ costcatch                                           claude-sonnet-4-20250514  ·  8.9s  $0.02 │
 │                                                                                              │
 │ ✓ Step 1   1.9s    544 tok in → 104 tok out  $0.00319  ██░░░                                 │
-│    ├─ ▸ read_file(path="logs/checkout.log", grep="ERROR")  → ~584 tok                        │
+│    ├─ ▸ read_file(path="logs/checkout.log", grep="ERROR")  → ~804 tok                        │
 │    └─ ✗ get_ticket(id="INC-2041")                                                            │
 │         failed: TicketAPIError: ticket INC-2041 not found. Do not retry.                     │
 │                                                                                              │
 │ ✓ Step 2   2.6s  1,305 tok in →  81 tok out  $0.00513  ███▒░                                 │
-│    └─ ▸ submit(summary="Payment worker ran out of DB connectio…)  → ~2 tok                   │
+│    └─ ▸ submit(summary="Payment worker ran out of DB connectio…)  → ~1 tok                   │
 │                                                                                              │
 │ ✓ Step 3   3.4s  1,386 tok in → 212 tok out  $0.00734  █████                                 │
 │    └─ ✓ end_turn, final answer                                                               │
@@ -185,7 +188,7 @@ export const SITE_CAPTURES = {
 │                                                                                              │
 │ ── warnings                                                                                  │
 │ ● Step 1: get_ticket() failed: TicketAPIError: ticket INC-2041 not found. Do not retry.      │
-│ run 2026-10-20T17-54-46                                                                      │
+│ run 2026-11-18T09-09-33                                                                      │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘`,
     exitCode: 0,
   },
@@ -211,14 +214,14 @@ export const SITE_CAPTURES = {
 │   avg output tok/run:  370                                                                   │
 │                                                                                              │
 │ ── tools, by result tokens sent                                                              │
-│     ~27k tok  read_file  (2 calls · avg ~2.9k tok)                                           │
-│     ~164 tok  get_ticket  (4 calls · 4 failed · avg ~13 tok · 282ms after)                   │
-│       ~2 tok  submit  (2 calls · 1 unanswered · avg ~2 tok · 332ms after)                    │
+│     ~38k tok  read_file  (2 calls · avg ~4.0k tok)                                           │
+│     ~168 tok  get_ticket  (4 calls · 4 failed · avg ~14 tok · 285ms after)                   │
+│       ~1 tok  submit  (2 calls · 1 unanswered · avg ~1 tok · 331ms after)                    │
 │                                                                                              │
 │ ── slowest runs                                                                              │
-│      18.0s  research_agent.py  2026-10-20T17-54-27                                           │
-│       8.9s  research_agent.py  2026-10-20T17-54-46                                           │
-│       1.7s  summarize.py  2026-10-20T17-54-55                                                │
+│      18.0s  research_agent.py  2026-11-18T09-09-15                                           │
+│       8.9s  research_agent.py  2026-11-18T09-09-33                                           │
+│       1.7s  summarize.py  2026-11-18T09-09-42                                                │
 │                                                                                              │
 │ 3 runs · $0.10 total                                                                         │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘`,
@@ -236,25 +239,25 @@ export const SITE_CAPTURES = {
 │   ┌──────────────────────┬────────┬──────────┬────────────┐                                  │
 │   │ Model                │ Tokens │     Cost │ Impact     │                                  │
 │   ├──────────────────────┼────────┼──────────┼────────────┤                                  │
-│   │ gemini-2.5-flash     │   ~361 │ $0.00011 │ █░░░░░░░░░ │                                  │
-│   │ gpt-4o               │   ~361 │ $0.00090 │ ████████░░ │                                  │
-│   │ claude-sonnet-4-202… │   ~401 │ $0.00120 │ ██████████ │                                  │
+│   │ gemini-2.5-flash     │   ~591 │ $0.00018 │ █░░░░░░░░░ │                                  │
+│   │ gpt-4o               │   ~461 │ $0.00115 │ ████████░░ │                                  │
+│   │ claude-sonnet-4-202… │   ~498 │ $0.00149 │ ██████████ │                                  │
 │   └──────────────────────┴────────┴──────────┴────────────┘                                  │
 │                                                                                              │
-│     ◦ gemini-2.5-flash is 91% cheaper than claude-sonnet-4-20250…                            │
-│       Saves $3.28/mo at 100 calls/day                                                        │
+│     ◦ gemini-2.5-flash is 88% cheaper than claude-sonnet-4-20250…                            │
+│       Saves $3.95/mo at 100 calls/day                                                        │
 │                                                                                              │
 │   ● Tokenizer Details                                                                        │
 │                                                                                              │
-│     ┌──────────────────────────┬──────────────────────┬─────────────┬────────────┐           │
-│     │ Model                    │ Tokenizer            │       Ratio │ Confidence │           │
-│     ├──────────────────────────┼──────────────────────┼─────────────┼────────────┤           │
-│     │ gemini-2.5-flash         │ sentencepiece-gemini │ ~4.0 ch/tok │     ✓ ±10% │           │
-│     │ gpt-4o                   │ o200k_base           │ ~4.0 ch/tok │     ✓ ±10% │           │
-│     │ claude-sonnet-4-20250514 │ claude-bpe-v1        │ ~3.6 ch/tok │     ✓ ±10% │           │
-│     └──────────────────────────┴──────────────────────┴─────────────┴────────────┘           │
+│     ┌──────────────────────────┬───────────────┬─────────────┬────────────┐                  │
+│     │ Model                    │ Tokenizer     │       Ratio │ Confidence │                  │
+│     ├──────────────────────────┼───────────────┼─────────────┼────────────┤                  │
+│     │ gemini-2.5-flash         │ gemini-sp     │ ~2.4 ch/tok │     ∆ ±65% │                  │
+│     │ gpt-4o                   │ o200k_base    │ ~3.1 ch/tok │     ∆ ±25% │                  │
+│     │ claude-sonnet-4-20250514 │ claude-bpe-v1 │ ~2.9 ch/tok │     ∆ ±65% │                  │
+│     └──────────────────────────┴───────────────┴─────────────┴────────────┘                  │
 │                                                                                              │
-│ ◦ character-ratio heuristics · actual tokens may vary                                        │
+│ ◦ estimated from text features · margins measured on real tokenizers                         │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘`,
     exitCode: 0,
   },
@@ -263,21 +266,21 @@ export const SITE_CAPTURES = {
     output: `Filed. Checkout failed because the payment worker ran out of database connections at 23:12; requests timed out until it restarted at 23:41. Raise the pool size and stop the web tier from retrying timed-out payments.
 
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
-│ costcatch                                           claude-sonnet-4-20250514  ·  8.9s  $0.02 │
+│ costcatch                                           claude-sonnet-4-20250514  ·  9.0s  $0.02 │
 │                                                                                              │
 │ ✓ Step 1   1.9s    544 tok in → 104 tok out  $0.00319  ██░░░                                 │
-│    ├─ ▸ read_file(path="logs/checkout.log", grep="ERROR")  → ~584 tok                        │
+│    ├─ ▸ read_file(path="logs/checkout.log", grep="ERROR")  → ~804 tok                        │
 │    └─ ✗ get_ticket(id="INC-2041")                                                            │
 │         failed: TicketAPIError: ticket INC-2041 not found. Do not retry.                     │
 │                                                                                              │
 │ ✓ Step 2   2.6s  1,305 tok in →  81 tok out  $0.00513  ███▒░                                 │
-│    └─ ▸ submit(summary="Payment worker ran out of DB connectio…)  → ~2 tok                   │
+│    └─ ▸ submit(summary="Payment worker ran out of DB connectio…)  → ~1 tok                   │
 │                                                                                              │
 │ ✓ Step 3   3.4s  1,386 tok in → 212 tok out  $0.00734  █████                                 │
 │    └─ ✓ end_turn, final answer                                                               │
 │                                                                                              │
 │ ── summary                                                                                   │
-│ 3 LLM calls  ·  3 tool calls  ·  8.9s  ·  $0.02                                              │
+│ 3 LLM calls  ·  3 tool calls  ·  9.0s  ·  $0.02                                              │
 │ ✗ 1 failed tool call                                                                         │
 │ 7.9s in LLM calls  ·  1.0s between calls (your code and tools)                               │
 │ 3.2k tok in → 397 tok out                                                                    │
@@ -285,10 +288,10 @@ export const SITE_CAPTURES = {
 │                                                                                              │
 │ ── warnings                                                                                  │
 │ ● Step 1: get_ticket() failed: TicketAPIError: ticket INC-2041 not found. Do not retry.      │
-│ run 2026-10-20T17-54-57                                                                      │
+│ run 2026-11-18T09-09-44                                                                      │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
 
-  ✓ Trace saved: ~/oncall-agent/.costcatch/2026-10-20T17-54-57-research_agent.json`,
+  ✓ Trace saved: ~/oncall-agent/.costcatch/2026-11-18T09-09-44-research_agent.json`,
     exitCode: 0,
   },
   clean: {
@@ -297,7 +300,7 @@ export const SITE_CAPTURES = {
 │ costcatch                                                                    clean · dry run │
 │                                                                                              │
 │ ── would delete                                                                              │
-│   2026-10-20T17-54-27-research_agent.json                                                    │
+│   2026-11-18T09-09-15-research_agent.json                                                    │
 │                                                                                              │
 │ 1 of 4 traces would be deleted · nothing was removed                                         │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘`,
@@ -356,7 +359,7 @@ export const RUN_WARNINGS: { code: string; severity: "critical" | "warn" | "info
   {
     "code": "large_tool_result",
     "severity": "warn",
-    "message": "Step 1: read_file() returned ~5.2k tokens, 86% of step 2's prompt, sent 5 times"
+    "message": "Step 1: read_file() returned ~7.2k tokens, 100% of step 2's prompt, sent 5 times"
   },
   {
     "code": "retry",

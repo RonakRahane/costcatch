@@ -99,7 +99,7 @@ const COMMANDS: Cmd[] = [
     takeaway: (
       <>
         Creates <code>.costcatch/</code>, adds it to <code>.gitignore</code> and fetches current
-        prices for 5,000+ models. Add <code>--offline</code> to skip the download.
+        prices for 5,831 models in the current capture. Add <code>--offline</code> to skip the download.
       </>
     ),
   },

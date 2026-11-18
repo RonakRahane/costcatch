@@ -10,7 +10,7 @@ const INSTALL = "npm install -g costcatch";
 const SPECS: [string, string][] = [
   ["works with", "Python, Node"],
   ["providers", "10, auto-detected"],
-  ["models priced", "5,000+ after init"],
+  ["models priced", "5,831 current prices"],
   ["code changes", "none"],
   ["account", "none"],
   ["your data", "stays local"],
@@ -48,7 +48,7 @@ export default function Hero() {
                 </h1>
 
                 <p className="lede hero-lede rise" style={{ "--d": "140ms" } as React.CSSProperties}>
-                  Put <code>costcatch</code> in front of the command that runs your agent. See every
+                  Put <code>costcatch</code> in front of the command that runs your agent / project. See every
                   LLM call it makes, what each call cost, and what went wrong.
                 </p>
 
