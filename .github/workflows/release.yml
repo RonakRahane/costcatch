@@ -26,8 +26,8 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
 
-      # npm Trusted Publishing requires npm 11.5.1 or newer.
-      - run: npm install --global npm@11.5.1
+      # Staged publishing requires npm 11.15.0 or newer.
+      - run: npm install --global npm@11.15.0
       - run: npm --version
 
       - uses: actions/setup-python@v5
@@ -50,5 +50,6 @@ jobs:
 
       - run: npm run verify
 
-      - name: Publish
-        run: npm publish --access public
+      # Stage the release for maintainer review and 2FA approval on npm.
+      - name: Stage package on npm
+        run: npm stage publish
