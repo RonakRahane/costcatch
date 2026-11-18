@@ -247,8 +247,7 @@ export default function Docs() {
                 <tr>
                   <td>Node.js</td>
                   <td>
-                    ≥ 18.17 for the published npm v0.1.0. Building and testing from this repository
-                    requires ≥ 20.19.
+                    ≥ 20.19 — required to run costcatch itself, whichever runtime you trace
                   </td>
                 </tr>
                 <tr>
