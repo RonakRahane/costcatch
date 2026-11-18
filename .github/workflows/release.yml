@@ -22,9 +22,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: https://registry.npmjs.org
           cache: npm
+
+      # npm Trusted Publishing requires npm 11.5.1 or newer.
+      - run: npm install --global npm@11.5.1
+      - run: npm --version
 
       - uses: actions/setup-python@v5
         with:
@@ -47,6 +51,4 @@ jobs:
       - run: npm run verify
 
       - name: Publish
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public

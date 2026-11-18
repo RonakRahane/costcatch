@@ -75,7 +75,7 @@ Commands:
 │                                                                              │
 │ ✓ created .costcatch/ (.costcatch)                                           │
 │ ✓ added .costcatch/ to .gitignore                                            │
-│ ✓ fetched latest pricing (5,766 models)                                      │
+│ ✓ fetched latest pricing (5,831 models)                                      │
 │                                                                              │
 │ ready · run \`costcatch --help\` to see all commands                           │
 └──────────────────────────────────────────────────────────────────────────────┘
