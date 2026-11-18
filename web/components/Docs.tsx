@@ -260,27 +260,24 @@ export default function Docs() {
               </tbody>
             </table></div>
 
-            <h3 className="doc-h2">Install from source</h3>
-            <div className="note">
-              <b>v0.1.0 is not yet published to npm.</b> The release workflow exists with provenance
-              attestation, but no tag has been pushed — so{" "}
-              <code>npm install -g costcatch</code> resolves to a 404 today. Install from source
-              until it is tagged.
-            </div>
+            <h3 className="doc-h2">Install</h3>
+            <p className="doc-p">
+              costcatch v0.1.0 is published on npm. Install it globally to use the command anywhere:
+            </p>
+            <Usage>npm install -g costcatch</Usage>
+            <p className="doc-p">Or run it once with npx:</p>
+            <Usage>npx costcatch python agent.py</Usage>
+            <p className="doc-p">
+              Verify the installation with <code>costcatch --help</code>.
+            </p>
+
+            <h3 className="doc-h2">Build from source</h3>
             <Usage>git clone https://github.com/RonakRahane/costcatch</Usage>
             <Usage>cd costcatch &amp;&amp; npm install &amp;&amp; npm run build &amp;&amp; npm link</Usage>
             <p className="doc-p">
               <code>npm link</code> puts <code>costcatch</code> on your <code>PATH</code>, pointing
               at <code>dist/index.js</code>. Verify with <code>costcatch --help</code>.
             </p>
-
-            <h3 className="doc-h2">Once published</h3>
-            <p className="doc-p">
-              When v0.1.0 is tagged, both of these will work and the source install becomes
-              unnecessary:
-            </p>
-            <Usage>npm install -g costcatch</Usage>
-            <Usage>npx costcatch python agent.py</Usage>
 
             <h3 className="doc-h2">Initialise a project</h3>
             <Usage>costcatch init</Usage>
@@ -1153,14 +1150,6 @@ export default function Docs() {
                   <td className="dim">
                     <code>--json</code> on every read command feeds your own
                   </td>
-                </tr>
-                <tr>
-                  <td>Not yet published to npm</td>
-                  <td>
-                    <code>release.yml</code> exists with provenance attestation; no tag has been
-                    pushed.
-                  </td>
-                  <td className="dim">install from source, or npm link</td>
                 </tr>
               </tbody>
             </table></div>
