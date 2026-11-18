@@ -247,7 +247,7 @@ export default function Docs() {
                 <tr>
                   <td>Node.js</td>
                   <td>
-                    ≥ 18.17 — required to run costcatch itself, whichever runtime you trace
+                    ≥ 20.19 — required to run costcatch itself, whichever runtime you trace
                   </td>
                 </tr>
                 <tr>
