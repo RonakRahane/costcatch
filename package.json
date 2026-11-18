@@ -1,6 +1,6 @@
 {
   "name": "costcatch",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Zero-instrumentation LLM agent tracer & cost tracker. Like `time` but for AI agents.",
   "type": "module",
   "bin": {

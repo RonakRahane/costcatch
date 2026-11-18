@@ -8,7 +8,7 @@
 
 [![npm version](https://img.shields.io/npm/v/costcatch.svg)](https://www.npmjs.com/package/costcatch)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen.svg)](https://nodejs.org)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20.19-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/RonakRahane/costcatch/actions/workflows/ci.yml/badge.svg)](https://github.com/RonakRahane/costcatch/actions/workflows/ci.yml)
 
 ```bash
@@ -89,9 +89,8 @@ monitoring, and it works fine next to any of the tools above.
 
 ## Install
 
-The published npm package, v0.1.0, runs on Node.js 18.17 or later. Building and
-testing from this repository requires Node.js 20.19 or later. To trace Python
-agents you also need Python 3.8 or later; there's nothing to `pip install`.
+The published npm package, v0.2.0, requires Node.js 20.19 or later. To trace
+Python agents you also need Python 3.8 or later; there's nothing to `pip install`.
 
 ```bash
 npm install -g costcatch
@@ -140,7 +139,7 @@ updated.
 
 
 
-┌────────────────────────────────┬────── v0.1.0 ───────────────────────────────────────┐
+┌────────────────────────────────┬────── v0.2.0 ───────────────────────────────────────┐
 │                                │                                                     │
 │ About                          │ Commands                                            │
 │ Zero-instrumentation LLM       │   run          trace a script (default)             │

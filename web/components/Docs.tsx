@@ -262,7 +262,7 @@ export default function Docs() {
 
             <h3 className="doc-h2">Install</h3>
             <p className="doc-p">
-              costcatch v0.1.0 is published on npm. Install it globally to use the command anywhere:
+              costcatch v0.2.0 is published on npm. Install it globally to use the command anywhere:
             </p>
             <Usage>npm install -g costcatch</Usage>
             <p className="doc-p">Or run it once with npx:</p>
@@ -501,7 +501,7 @@ export default function Docs() {
                 project id, no account.
               </p>
               <div className="framed">
-                <span className="frame-ver">v0.1.0</span>
+                <span className="frame-ver">v0.2.0</span>
                 <div className="splash">
                   <div className="splash-col">
                     <h4>About</h4>

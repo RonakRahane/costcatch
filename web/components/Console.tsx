@@ -117,7 +117,7 @@ export function ConsoleWindow() {
           <span className="sig" aria-hidden />
           <span className="path">~/oncall-agent</span>
           <span className="spacer" />
-          <span>costcatch v0.1.0</span>
+          <span>costcatch v0.2.0</span>
         </div>
 
         <div className="console-grid">
