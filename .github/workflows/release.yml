@@ -48,7 +48,8 @@ jobs:
             exit 1
           fi
 
-      - run: npm run verify
+      - name: Verify source and build
+        run: npm run typecheck && npm run build
 
       # Stage the release for maintainer review and 2FA approval on npm.
       - name: Stage package on npm
